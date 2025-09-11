@@ -45,6 +45,24 @@ kmptv/
 - **Android TV**: Leanback-style UI, remote control navigation, media session integration
 - **Apple TV**: Focus engine integration, Siri Remote support, Top Shelf integration
 
+## Screenshots
+
+<div align="center">
+
+![Android TV Main Screen](docs/screenshots/Screenshot.png)
+
+</div>
+
+### Key Features Shown
+- **3x3 Content Grid**: Both platforms display identical content layout
+- **Focus Navigation**: Cards scale and highlight when focused
+- **Content Types**: Video (🎬), Audio (🎵), Image (🖼️), Mixed (📁) with color-coded badges
+- **Offline Indicators**: Shows which content is available offline
+- **TV-Optimized UI**: Large text, proper spacing for 10-foot viewing distance
+- **Loading States**: Smooth loading animations with progress indicators
+
+> **Note**: To generate fresh screenshots, run the apps in their respective simulators (Android TV Emulator or Apple TV Simulator in Xcode) and capture the main content screen.
+
 ## Getting Started
 
 ### Prerequisites
