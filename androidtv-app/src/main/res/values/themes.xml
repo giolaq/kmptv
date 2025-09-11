@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- TV Theme -->
+    <style name="Theme.KMPTV.TV" parent="Theme.Leanback">
+        <item name="colorPrimary">#FF6200EE</item>
+        <item name="colorAccent">#FF03DAC5</item>
+        <item name="android:colorBackground">#FF121212</item>
+        <item name="android:windowBackground">#FF121212</item>
+        <item name="android:textColorPrimary">#FFFFFFFF</item>
+    </style>
+</resources>

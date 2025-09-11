@@ -1,0 +1,70 @@
+# Gradle build files
+.gradle/
+build/
+gradle-app.setting
+!gradle-wrapper.jar
+!gradle-wrapper.properties
+!gradle/
+**/build/
+
+# Local properties
+local.properties
+
+# IntelliJ IDEA / Android Studio
+.idea/
+*.iml
+*.ipr
+*.iws
+
+# macOS
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Android specific
+*.apk
+*.aar
+*.dex
+*.class
+
+# Signing files
+*.jks
+*.keystore
+
+# Kotlin Multiplatform
+shared-core/build/
+androidtv-app/build/
+
+# Apple / Xcode / Swift
+appletv-app/.build/
+appletv-app/DerivedData/
+**/*.xcworkspace/xcuserdata/
+**/*.xcuserdata/
+**/*.xcuserdatad/
+appletv-app/*.hmap
+appletv-app/*.ipa
+*.xcuserstate
+
+# Claude specific
+.claude/
+memory/
+
+# Logs
+*.log
+logs/
+
+# Temporary files
+*.tmp
+*.temp
+*.swp
+*.swo
+
+# SQLDelight generated files
+**/sqldelight/
+
+# Konan (Kotlin Native) cache
+.konan/

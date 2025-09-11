@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">KMPTV</string>
+    <string name="app_description">Kotlin Multiplatform TV Application</string>
+    <string name="loading">Loading content...</string>
+    <string name="error_loading_content">Error loading content</string>
+    <string name="no_content_available">No content available</string>
+    <string name="offline_content">Offline</string>
+    <string name="search_hint">Search for content...</string>
+</resources>
