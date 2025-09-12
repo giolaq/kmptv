@@ -49,7 +49,11 @@ kmptv/
 
 <div align="center">
 
+**Android TV**
 ![Android TV Main Screen](docs/screenshots/Screenshot.png)
+
+**Apple TV**
+![Apple TV Main Screen](docs/screenshots/tvOSscreenshot.png)
 
 </div>
 

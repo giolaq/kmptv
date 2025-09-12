@@ -74,17 +74,34 @@ struct ContentView: View {
                 }
                 Spacer()
             } else {
-                // Content Grid
-                ScrollView {
-                    LazyVGrid(columns: Array(repeating: GridItem(.flexible()), count: 3), spacing: 20) {
-                        ForEach(contentItems) { item in
-                            TVCardView(item: item) {
-                                // Handle item selection
-                                print("Selected: \(item.title)")
+                // Content Grid optimized for Apple TV
+                GeometryReader { geometry in
+                    let totalWidth = geometry.size.width
+                    let horizontalPadding: CGFloat = 40 // Minimal edge padding
+                    let cardSpacing: CGFloat = 50 // Increased spacing for focus scaling
+                    let availableWidth = totalWidth - (2 * horizontalPadding) - (2 * cardSpacing)
+                    let cardWidth = availableWidth / 3 // Equal width cards across full screen
+                    let cardHeight = cardWidth / (16/9) // 16:9 aspect ratio
+                    
+                    let columns = [
+                        GridItem(.fixed(cardWidth), spacing: cardSpacing),
+                        GridItem(.fixed(cardWidth), spacing: cardSpacing),
+                        GridItem(.fixed(cardWidth), spacing: cardSpacing)
+                    ]
+                    
+                    ScrollView {
+                        LazyVGrid(columns: columns, spacing: 40) {
+                            ForEach(contentItems) { item in
+                                TVCardView(item: item) {
+                                    // Handle item selection
+                                    print("Selected: \(item.title)")
+                                }
+                                .frame(width: cardWidth, height: cardHeight)
                             }
                         }
+                        .padding(.horizontal, horizontalPadding)
+                        .padding(.vertical, 40)
                     }
-                    .padding()
                 }
             }
         }
@@ -122,69 +139,79 @@ struct TVCardView: View {
     
     var body: some View {
         Button(action: onItemClick) {
-            VStack(spacing: 12) {
-                // Content type indicator
-                HStack {
-                    Text(item.contentType.rawValue)
-                        .font(.caption2)
-                        .fontWeight(.bold)
-                        .foregroundColor(.white)
-                        .padding(.horizontal, 6)
-                        .padding(.vertical, 2)
-                        .background(item.contentType.color)
-                        .cornerRadius(4)
+            ZStack {
+                // Main card content optimized for 16:9 widescreen
+                HStack(spacing: 16) {
+                    // Thumbnail placeholder - optimized for widescreen
+                    RoundedRectangle(cornerRadius: 8)
+                        .fill(Color.gray.opacity(0.2))
+                        .frame(width: 100, height: 56) // 16:9 mini thumbnail
+                        .overlay(
+                            Text("📺")
+                                .font(.system(size: 20))
+                        )
+                    
+                    // Content info takes remaining space
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text(item.title)
+                            .font(.title3)
+                            .fontWeight(.semibold)
+                            .lineLimit(1)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                        
+                        if let description = item.description {
+                            Text(description)
+                                .font(.body)
+                                .foregroundColor(.secondary)
+                                .lineLimit(2)
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                        }
+                        
+                        Spacer(minLength: 0)
+                    }
+                }
+                .padding(16)
+                
+                // Overlaid labels - positioned absolutely to avoid layout conflicts
+                VStack {
+                    HStack {
+                        // Content type indicator
+                        Text(item.contentType.rawValue)
+                            .font(.caption2)
+                            .fontWeight(.bold)
+                            .foregroundColor(.white)
+                            .padding(.horizontal, 8)
+                            .padding(.vertical, 3)
+                            .background(item.contentType.color)
+                            .cornerRadius(4)
+                        
+                        Spacer()
+                        
+                        // Offline indicator
+                        if item.isOfflineAvailable {
+                            Image(systemName: "arrow.down.circle.fill")
+                                .font(.caption2)
+                                .foregroundColor(.green)
+                        }
+                    }
+                    .padding(.horizontal, 16)
+                    .padding(.top, 16)
                     
                     Spacer()
                 }
-                
-                // Thumbnail placeholder
-                RoundedRectangle(cornerRadius: 8)
-                    .fill(Color.gray.opacity(0.3))
-                    .frame(height: 80)
-                    .overlay(
-                        Text("📺")
-                            .font(.title)
-                    )
-                
-                // Content info
-                VStack(alignment: .leading, spacing: 4) {
-                    Text(item.title)
-                        .font(.headline)
-                        .fontWeight(.bold)
-                        .lineLimit(1)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                    
-                    if let description = item.description {
-                        Text(description)
-                            .font(.caption)
-                            .foregroundColor(.secondary)
-                            .lineLimit(2)
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                    }
-                }
-                
-                // Offline indicator
-                if item.isOfflineAvailable {
-                    HStack {
-                        Image(systemName: "iphone")
-                            .font(.caption2)
-                        Text("Offline")
-                            .font(.caption2)
-                            .foregroundColor(.blue)
-                        Spacer()
-                    }
-                }
             }
-            .padding(12)
             .background(
-                RoundedRectangle(cornerRadius: 12)
-                    .fill(isFocused ? Color.blue.opacity(0.3) : Color.gray.opacity(0.1))
+                RoundedRectangle(cornerRadius: 16)
+                    .fill(isFocused ? Color.blue.opacity(0.3) : Color.gray.opacity(0.15))
+                    .strokeBorder(
+                        isFocused ? Color.blue : Color.clear,
+                        lineWidth: 3
+                    )
             )
-            .scaleEffect(isFocused ? 1.05 : 1.0)
+            .scaleEffect(isFocused ? 1.02 : 1.0)
             .animation(.easeInOut(duration: 0.2), value: isFocused)
         }
         .buttonStyle(PlainButtonStyle())
-        .frame(width: 200, height: 180)
     }
 }
 
