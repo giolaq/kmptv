@@ -107,16 +107,17 @@ class ContentRepositoryImpl : ContentRepository {
         val sampleItems = listOf(
             ContentItem(
                 id = "content-001",
-                title = "Action Movie Collection",
-                description = "Latest action movies",
+                title = "Big Buck Bunny",
+                description = "Blender Foundation's open movie featuring a giant rabbit",
+                thumbnailUrl = "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/images/BigBuckBunny.jpg",
                 contentType = ContentType.Video,
                 metadata = ContentMetadata(
-                    duration = 7200000L, // 2 hours
+                    duration = 596000L, // ~10 minutes
                     quality = VideoQuality.HD_1080p,
-                    genre = "Action"
+                    genre = "Animation"
                 ),
                 priority = 10,
-                tags = listOf("action", "popular"),
+                tags = listOf("animation", "popular"),
                 isOfflineAvailable = true
             ),
             ContentItem(
@@ -163,16 +164,17 @@ class ContentRepositoryImpl : ContentRepository {
             ),
             ContentItem(
                 id = "content-005",
-                title = "Documentary Series",
-                description = "Educational content",
+                title = "Elephant Dreams",
+                description = "Blender Foundation's first open movie project",
+                thumbnailUrl = "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/images/ElephantsDream.jpg",
                 contentType = ContentType.Video,
                 metadata = ContentMetadata(
-                    duration = 2700000L, // 45 minutes
-                    quality = VideoQuality.UHD_4K,
-                    genre = "Documentary"
+                    duration = 653000L, // ~11 minutes
+                    quality = VideoQuality.HD_720p,
+                    genre = "Animation"
                 ),
                 priority = 6,
-                tags = listOf("documentary", "education"),
+                tags = listOf("animation", "education"),
                 isOfflineAvailable = true
             ),
             ContentItem(
@@ -219,16 +221,17 @@ class ContentRepositoryImpl : ContentRepository {
             ),
             ContentItem(
                 id = "content-009",
-                title = "Sports Highlights",
-                description = "Best moments",
+                title = "Tears of Steel",
+                description = "Blender Foundation's fourth open movie with live action and CGI",
+                thumbnailUrl = "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/images/TearsOfSteel.jpg",
                 contentType = ContentType.Video,
                 metadata = ContentMetadata(
-                    duration = 1200000L, // 20 minutes
+                    duration = 734000L, // ~12 minutes
                     quality = VideoQuality.HD_1080p,
-                    genre = "Sports"
+                    genre = "Sci-Fi"
                 ),
                 priority = 2,
-                tags = listOf("sports", "highlights"),
+                tags = listOf("sci-fi", "action"),
                 isOfflineAvailable = false
             )
         )

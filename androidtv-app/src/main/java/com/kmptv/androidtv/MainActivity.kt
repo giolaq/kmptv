@@ -16,6 +16,8 @@ import androidx.tv.foundation.lazy.grid.TvLazyVerticalGrid
 import androidx.tv.foundation.lazy.grid.TvGridCells
 import androidx.tv.foundation.lazy.grid.items
 import com.kmptv.androidtv.compose.TVCard
+import com.kmptv.androidtv.compose.ContentDetailScreen
+import com.kmptv.androidtv.compose.VideoPlayerScreen
 import com.kmptv.androidtv.theme.KMPTVTheme
 import com.kmptv.shared_core.models.*
 import com.kmptv.shared_core.repositories.ContentRepositoryImpl
@@ -47,6 +49,9 @@ class MainActivity : ComponentActivity() {
         var contentItems by remember { mutableStateOf<List<ContentItem>>(emptyList()) }
         var isLoading by remember { mutableStateOf(true) }
         var errorMessage by remember { mutableStateOf<String?>(null) }
+        var selectedItem by remember { mutableStateOf<ContentItem?>(null) }
+        var showingDetail by remember { mutableStateOf(false) }
+        var showingVideoPlayer by remember { mutableStateOf(false) }
         
         val scope = rememberCoroutineScope()
         
@@ -102,10 +107,47 @@ class MainActivity : ComponentActivity() {
             }
         }
         
-        Column(
-            modifier = Modifier.fillMaxSize().padding(24.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
-        ) {
+        when {
+            showingVideoPlayer && selectedItem != null -> {
+                // Show video player screen
+                VideoPlayerScreen(
+                    item = selectedItem!!,
+                    videoUrl = selectedItem!!.getVideoUrl() ?: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4",
+                    onBack = {
+                        showingVideoPlayer = false
+                        showingDetail = false
+                        selectedItem = null
+                    }
+                )
+            }
+            
+            showingDetail && selectedItem != null -> {
+                // Show detail screen
+                ContentDetailScreen(
+                    item = selectedItem!!,
+                    onBack = {
+                        showingDetail = false
+                        selectedItem = null
+                    },
+                    onPlay = { item ->
+                        // Navigate to video player
+                        showingVideoPlayer = true
+                    },
+                    onAddToWatchlist = { item ->
+                        scope.launch {
+                            // Handle watchlist action
+                            println("Add to watchlist: ${item.title}")
+                        }
+                    }
+                )
+            }
+            
+            else -> {
+            // Show main screen
+            Column(
+                modifier = Modifier.fillMaxSize().padding(24.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
             // Header
             Text(
                 text = "KMPTV",
@@ -156,12 +198,17 @@ class MainActivity : ComponentActivity() {
                                     scope.launch {
                                         contentRepository.markContentAccessed(clickedItem.id)
                                     }
+                                    // Navigate to detail screen
+                                    selectedItem = clickedItem
+                                    showingDetail = true
                                 }
                             )
                         }
                     }
                 }
             }
+            }
         }
+    }
     }
 }
