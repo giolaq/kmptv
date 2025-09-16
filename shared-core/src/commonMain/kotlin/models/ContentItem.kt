@@ -90,4 +90,20 @@ data class ContentItem(
     fun setOfflineAvailable(available: Boolean): ContentItem {
         return copy(isOfflineAvailable = available)
     }
+
+    /**
+     * Gets the streaming video URL for this content item
+     * In a real implementation, this would come from a proper content delivery system
+     */
+    fun getVideoUrl(): String? {
+        return when (contentType) {
+            ContentType.Video -> when (id) {
+                "content-001" -> "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4"
+                "content-005" -> "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4"
+                "content-009" -> "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/TearsOfSteel.mp4"
+                else -> "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4" // Default video
+            }
+            else -> null // Only video content has playable URLs
+        }
+    }
 }

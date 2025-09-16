@@ -14,6 +14,22 @@ struct ContentItem: Identifiable {
     let contentType: ContentType
     let description: String?
     let isOfflineAvailable: Bool
+
+    // Function to get video URL for streaming
+    func getVideoUrl() -> String? {
+        guard contentType == .video else { return nil }
+
+        switch title {
+        case "Big Buck Bunny":
+            return "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4"
+        case "Elephant Dreams":
+            return "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4"
+        case "Tears of Steel":
+            return "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/TearsOfSteel.mp4"
+        default:
+            return "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4" // Default video
+        }
+    }
 }
 
 enum ContentType: String, CaseIterable {
@@ -37,6 +53,9 @@ struct ContentView: View {
     @State private var contentItems: [ContentItem] = []
     @State private var isLoading = true
     @State private var errorMessage: String?
+    @State private var selectedItem: ContentItem?
+    @State private var showingDetail = false
+    @State private var showingVideoPlayer = false
     
     var body: some View {
         VStack(spacing: 16) {
@@ -93,8 +112,9 @@ struct ContentView: View {
                         LazyVGrid(columns: columns, spacing: 40) {
                             ForEach(contentItems) { item in
                                 TVCardView(item: item) {
-                                    // Handle item selection
-                                    print("Selected: \(item.title)")
+                                    // Handle item selection - show detail screen
+                                    selectedItem = item
+                                    showingDetail = true
                                 }
                                 .frame(width: cardWidth, height: cardHeight)
                             }
@@ -109,22 +129,52 @@ struct ContentView: View {
         .onAppear {
             loadContent()
         }
+        .fullScreenCover(isPresented: $showingVideoPlayer) {
+            if let selectedItem = selectedItem {
+                VideoPlayerView(
+                    item: selectedItem,
+                    videoURL: selectedItem.getVideoUrl()
+                ) {
+                    // Handle back navigation from video player
+                    showingVideoPlayer = false
+                    showingDetail = false
+                    self.selectedItem = nil
+                }
+            }
+        }
+        .sheet(isPresented: $showingDetail) {
+            if let selectedItem = selectedItem {
+                ContentDetailView(
+                    item: selectedItem,
+                    onBack: {
+                        // Handle back navigation from detail
+                        showingDetail = false
+                        self.selectedItem = nil
+                    },
+                    onPlay: { item in
+                        // Handle play action - show video player
+                        showingDetail = false
+                        showingVideoPlayer = true
+                    }
+                )
+            }
+        }
     }
     
     private func loadContent() {
         // Simulate loading delay
         DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
-            // Mock content data that matches Android TV app
+            // Mock content data that matches Kotlin shared core
             contentItems = [
-                ContentItem(title: "Action Movie Collection", contentType: .video, description: "Latest action movies", isOfflineAvailable: true),
+                ContentItem(title: "Big Buck Bunny", contentType: .video, description: "Blender Foundation's open movie featuring a giant rabbit", isOfflineAvailable: true),
                 ContentItem(title: "Music Playlist", contentType: .audio, description: "Your favorite tracks", isOfflineAvailable: false),
                 ContentItem(title: "Photo Gallery", contentType: .image, description: "Recent photos", isOfflineAvailable: true),
                 ContentItem(title: "Mixed Media Pack", contentType: .mixed, description: "Videos and photos", isOfflineAvailable: false),
-                ContentItem(title: "Documentary Series", contentType: .video, description: "Educational content", isOfflineAvailable: true),
+                ContentItem(title: "Elephant Dreams", contentType: .video, description: "Blender Foundation's first open movie project", isOfflineAvailable: true),
                 ContentItem(title: "Podcast Collection", contentType: .audio, description: "Tech podcasts", isOfflineAvailable: false),
                 ContentItem(title: "Travel Photos", contentType: .image, description: "Vacation memories", isOfflineAvailable: true),
                 ContentItem(title: "Entertainment Bundle", contentType: .mixed, description: "Movies and music", isOfflineAvailable: true),
-                ContentItem(title: "Sports Highlights", contentType: .video, description: "Best moments", isOfflineAvailable: false)
+                ContentItem(title: "Tears of Steel", contentType: .video, description: "Blender Foundation's fourth open movie with live action and CGI", isOfflineAvailable: false)
             ]
             isLoading = false
         }
@@ -208,10 +258,236 @@ struct TVCardView: View {
                         lineWidth: 3
                     )
             )
-            .scaleEffect(isFocused ? 1.02 : 1.0)
+            .scaleEffect(isFocused ? 1.05 : 1.0)
             .animation(.easeInOut(duration: 0.2), value: isFocused)
         }
         .buttonStyle(PlainButtonStyle())
+    }
+}
+
+// MARK: - Content Detail View
+struct ContentDetailView: View {
+    let item: ContentItem
+    let onBack: () -> Void
+    let onPlay: (ContentItem) -> Void
+    @Environment(\.isFocused) private var isFocused: Bool
+    
+    var body: some View {
+        GeometryReader { geometry in
+            ZStack {
+                // Background
+                Color.black.ignoresSafeArea()
+                
+                VStack(spacing: 40) {
+                    // Header with back navigation
+                    HStack {
+                        TVFocusableButton(
+                            action: onBack,
+                            content: {
+                                HStack(spacing: 12) {
+                                    Image(systemName: "chevron.left")
+                                        .font(.title2)
+                                    Text("Back")
+                                        .font(.title2)
+                                }
+                                .foregroundColor(.white)
+                                .padding(.horizontal, 20)
+                                .padding(.vertical, 10)
+                            }
+                        )
+                        
+                        Spacer()
+                        
+                        Text("KMPTV")
+                            .font(.title)
+                            .fontWeight(.bold)
+                            .foregroundColor(.white)
+                    }
+                    .padding(.horizontal, 60)
+                    .padding(.top, 40)
+                    
+                    // Main content area
+                    HStack(spacing: 60) {
+                        // Hero image/thumbnail - make it focusable if it's a video
+                        if item.contentType == .video {
+                            TVFocusableButton(
+                                action: { onPlay(item) },
+                                content: {
+                                    RoundedRectangle(cornerRadius: 20)
+                                        .fill(Color.gray.opacity(0.3))
+                                        .frame(width: 600, height: 337) // 16:9 aspect ratio
+                                        .overlay(
+                                            VStack(spacing: 20) {
+                                                Text("📺")
+                                                    .font(.system(size: 80))
+                                                Text("Tap to Play")
+                                                    .font(.title2)
+                                                    .foregroundColor(.white)
+                                            }
+                                        )
+                                }
+                            )
+                        } else {
+                            RoundedRectangle(cornerRadius: 20)
+                                .fill(Color.gray.opacity(0.3))
+                                .frame(width: 600, height: 337) // 16:9 aspect ratio
+                                .overlay(
+                                    VStack(spacing: 20) {
+                                        Text("📺")
+                                            .font(.system(size: 80))
+                                        Text(item.contentType.rawValue)
+                                            .font(.title2)
+                                            .foregroundColor(.white)
+                                    }
+                                )
+                        }
+                        
+                        // Content details
+                        VStack(alignment: .leading, spacing: 24) {
+                            // Title and content type
+                            VStack(alignment: .leading, spacing: 12) {
+                                Text(item.title)
+                                    .font(.largeTitle)
+                                    .fontWeight(.bold)
+                                    .foregroundColor(.white)
+                                
+                                HStack(spacing: 16) {
+                                    Text(item.contentType.rawValue)
+                                        .font(.headline)
+                                        .fontWeight(.semibold)
+                                        .foregroundColor(.white)
+                                        .padding(.horizontal, 16)
+                                        .padding(.vertical, 8)
+                                        .background(item.contentType.color)
+                                        .cornerRadius(8)
+                                    
+                                    if item.isOfflineAvailable {
+                                        HStack(spacing: 6) {
+                                            Image(systemName: "arrow.down.circle.fill")
+                                                .foregroundColor(.green)
+                                            Text("Available Offline")
+                                                .foregroundColor(.green)
+                                        }
+                                        .font(.subheadline)
+                                    }
+                                }
+                            }
+                            
+                            // Description
+                            if let description = item.description {
+                                Text(description)
+                                    .font(.title3)
+                                    .foregroundColor(.secondary)
+                                    .lineLimit(4)
+                            }
+                            
+                            // Additional details
+                            VStack(alignment: .leading, spacing: 12) {
+                                DetailRow(title: "Duration", value: "2h 15m")
+                                DetailRow(title: "Quality", value: "4K HDR")
+                                DetailRow(title: "Audio", value: "Dolby Atmos")
+                                DetailRow(title: "Released", value: "2024")
+                            }
+                            
+                            // Action buttons
+                            HStack(spacing: 30) {
+                                TVFocusableButton(
+                                    action: { onPlay(item) },
+                                    content: {
+                                        HStack(spacing: 12) {
+                                            Image(systemName: "play.fill")
+                                                .font(.title3)
+                                            Text("Play")
+                                                .font(.title2)
+                                                .fontWeight(.semibold)
+                                        }
+                                        .foregroundColor(.black)
+                                        .padding(.horizontal, 40)
+                                        .padding(.vertical, 16)
+                                        .background(Color.white)
+                                        .cornerRadius(12)
+                                    }
+                                )
+
+                                TVFocusableButton(
+                                    action: { print("Add to watchlist: \(item.title)") },
+                                    content: {
+                                        HStack(spacing: 12) {
+                                            Image(systemName: "plus")
+                                                .font(.title3)
+                                            Text("Watchlist")
+                                                .font(.title2)
+                                                .fontWeight(.semibold)
+                                        }
+                                        .foregroundColor(.white)
+                                        .padding(.horizontal, 40)
+                                        .padding(.vertical, 16)
+                                        .background(Color.gray.opacity(0.4))
+                                        .cornerRadius(12)
+                                    }
+                                )
+                            }
+                            .padding(.top, 20)
+                            
+                            Spacer()
+                        }
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                    }
+                    .padding(.horizontal, 60)
+                    
+                    Spacer()
+                }
+            }
+        }
+    }
+}
+
+// MARK: - Detail Row Helper
+struct DetailRow: View {
+    let title: String
+    let value: String
+    
+    var body: some View {
+        HStack {
+            Text(title)
+                .font(.body)
+                .foregroundColor(.secondary)
+            Spacer()
+            Text(value)
+                .font(.body)
+                .fontWeight(.medium)
+                .foregroundColor(.white)
+        }
+    }
+}
+
+
+// MARK: - TV Focusable Button Component
+struct TVFocusableButton<Content: View>: View {
+    let action: () -> Void
+    let content: () -> Content
+    @Environment(\.isFocused) private var isFocused: Bool
+
+    var body: some View {
+        Button(action: action) {
+            content()
+        }
+        .buttonStyle(PlainButtonStyle())
+        .background(
+            RoundedRectangle(cornerRadius: 12)
+                .strokeBorder(
+                    isFocused ? Color.white : Color.clear,
+                    lineWidth: 4
+                )
+                .shadow(
+                    color: isFocused ? Color.white.opacity(0.4) : Color.clear,
+                    radius: isFocused ? 8 : 0,
+                    x: 0,
+                    y: isFocused ? 4 : 0
+                )
+        )
+        .scaleEffect(isFocused ? 1.08 : 1.0)
+        .animation(.easeInOut(duration: 0.2), value: isFocused)
     }
 }
 
