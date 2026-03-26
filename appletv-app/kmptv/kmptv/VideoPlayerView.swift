@@ -144,10 +144,10 @@ struct VideoPlayerControlsOverlay: View {
                     .padding(.vertical, 12)
                     .background(
                         RoundedRectangle(cornerRadius: 10)
-                            .fill(Color.black.opacity(0.5))
+                            .fill(Color(white: 0.15))
                     )
                 }
-                .buttonStyle(PlainButtonStyle())
+                .buttonStyle(TVDarkButtonStyle())
                 
                 Spacer()
                 
@@ -199,8 +199,10 @@ struct VideoPlayerControlsOverlay: View {
                         Image(systemName: "gobackward.10")
                             .font(.system(size: 32))
                             .foregroundColor(.white)
+                            .padding(12)
+                            .background(RoundedRectangle(cornerRadius: 10).fill(Color(white: 0.15)))
                     }
-                    .buttonStyle(PlainButtonStyle())
+                    .buttonStyle(TVDarkButtonStyle())
                     
                     // Play/Pause button
                     Button(action: {
@@ -213,8 +215,10 @@ struct VideoPlayerControlsOverlay: View {
                         Image(systemName: isPlaying ? "pause.circle.fill" : "play.circle.fill")
                             .font(.system(size: 64))
                             .foregroundColor(.white)
+                            .padding(12)
+                            .background(Circle().fill(Color(white: 0.15)))
                     }
-                    .buttonStyle(PlainButtonStyle())
+                    .buttonStyle(TVDarkButtonStyle())
                     
                     // Seek forward
                     Button(action: {
@@ -225,8 +229,10 @@ struct VideoPlayerControlsOverlay: View {
                         Image(systemName: "goforward.10")
                             .font(.system(size: 32))
                             .foregroundColor(.white)
+                            .padding(12)
+                            .background(RoundedRectangle(cornerRadius: 10).fill(Color(white: 0.15)))
                     }
-                    .buttonStyle(PlainButtonStyle())
+                    .buttonStyle(TVDarkButtonStyle())
                 }
             }
             .padding(.bottom, 80)

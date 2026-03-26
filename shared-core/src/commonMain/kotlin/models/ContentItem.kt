@@ -15,7 +15,8 @@ data class ContentItem(
     val focusable: Boolean = true,                 // Whether item can receive navigation focus
     val collections: List<String> = emptyList(),   // Collection IDs this content belongs to
     val tags: List<String> = emptyList(),          // Content tags for filtering/search
-    val priority: Int = 0                          // Display priority (higher = more prominent)
+    val priority: Int = 0,                          // Display priority (higher = more prominent)
+    val videoUrl: String? = null                     // Direct video playback URL
 ) {
     
     /**
@@ -95,15 +96,11 @@ data class ContentItem(
      * Gets the streaming video URL for this content item
      * In a real implementation, this would come from a proper content delivery system
      */
-    fun getVideoUrl(): String? {
+    fun resolveVideoUrl(): String? {
+        if (videoUrl != null) return videoUrl
         return when (contentType) {
-            ContentType.Video -> when (id) {
-                "content-001" -> "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4"
-                "content-005" -> "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4"
-                "content-009" -> "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/TearsOfSteel.mp4"
-                else -> "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4" // Default video
-            }
-            else -> null // Only video content has playable URLs
+            ContentType.Video -> "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4"
+            else -> null
         }
     }
 }

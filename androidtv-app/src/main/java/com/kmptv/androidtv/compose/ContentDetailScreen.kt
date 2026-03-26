@@ -1,23 +1,29 @@
+@file:OptIn(ExperimentalTvMaterial3Api::class)
+
 package com.kmptv.androidtv.compose
 
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.tv.material3.*
+import coil.compose.AsyncImage
 import com.kmptv.shared_core.models.ContentItem
-import com.kmptv.shared_core.models.ContentType
 
 @OptIn(ExperimentalTvMaterial3Api::class)
 @Composable
@@ -28,262 +34,120 @@ fun ContentDetailScreen(
     onAddToWatchlist: (ContentItem) -> Unit = {},
     modifier: Modifier = Modifier
 ) {
-    var backButtonFocused by remember { mutableStateOf(false) }
-    var playButtonFocused by remember { mutableStateOf(false) }
-    var watchlistButtonFocused by remember { mutableStateOf(false) }
-
     Box(
         modifier = modifier
             .fillMaxSize()
-            .background(Color.Black)
+            .background(Color(0xFF0D0D0D))
     ) {
+        // Full-bleed backdrop image
+        AsyncImage(
+            model = item.thumbnailUrl,
+            contentDescription = null,
+            contentScale = ContentScale.Crop,
+            modifier = Modifier.fillMaxSize()
+        )
+
+        // Gradient overlays for readability
+        Box(
+            Modifier.fillMaxSize().background(
+                Brush.horizontalGradient(
+                    colors = listOf(Color(0xFF0D0D0D), Color(0xFF0D0D0D).copy(alpha = 0.6f), Color.Transparent),
+                    endX = 1200f
+                )
+            )
+        )
+        Box(
+            Modifier.fillMaxSize().background(
+                Brush.verticalGradient(
+                    colors = listOf(Color.Transparent, Color(0xFF0D0D0D).copy(alpha = 0.8f)),
+                    startY = 300f
+                )
+            )
+        )
+
+        // Content overlay — left-aligned like streaming services
         Column(
             modifier = Modifier
-                .fillMaxSize()
-                .verticalScroll(rememberScrollState())
-                .padding(horizontal = 48.dp, vertical = 32.dp),
-            verticalArrangement = Arrangement.spacedBy(24.dp)
+                .fillMaxHeight()
+                .widthIn(max = 550.dp)
+                .padding(start = 48.dp, top = 40.dp, bottom = 40.dp),
+            verticalArrangement = Arrangement.SpaceBetween
         ) {
-            // Header with back navigation
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Surface(
-                    onClick = onBack,
-                    modifier = Modifier
-                        .scale(if (backButtonFocused) 1.1f else 1.0f)
-                        .onFocusChanged { focusState ->
-                            backButtonFocused = focusState.isFocused
-                        }
-                        .background(
-                            color = if (backButtonFocused) 
-                                MaterialTheme.colorScheme.primary 
-                            else 
-                                Color.Transparent,
-                            shape = RoundedCornerShape(8.dp)
-                        ),
-                    tonalElevation = if (backButtonFocused) 8.dp else 0.dp
-                ) {
-                    Row(
-                        modifier = Modifier.padding(16.dp),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text(
-                            text = "←",
-                            style = MaterialTheme.typography.headlineSmall,
-                            color = Color.White
-                        )
-                        Text(
-                            text = "Back",
-                            style = MaterialTheme.typography.headlineSmall,
-                            color = Color.White
-                        )
-                    }
-                }
-                
+            // Back button
+            DetailActionButton(
+                label = "← Back",
+                isPrimary = false,
+                onClick = onBack
+            )
+
+            // Middle: title + metadata
+            Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
                 Text(
-                    text = "KMPTV",
-                    style = MaterialTheme.typography.headlineLarge,
+                    text = item.title,
+                    style = MaterialTheme.typography.displaySmall,
                     fontWeight = FontWeight.Bold,
-                    color = Color.White
+                    color = Color.White,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis
                 )
+
+                // Metadata chips row
+                Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                    item.metadata.releaseDate?.let { MetadataChip(it) }
+                    item.metadata.duration?.let { ms ->
+                        val mins = ms / 60000
+                        val h = mins / 60
+                        val m = mins % 60
+                        val text = if (h > 0) "${h}h ${m}m" else "${m}m"
+                        MetadataChip(text)
+                    }
+                    item.metadata.rating?.takeIf { it.isNotEmpty() }?.let { MetadataChip(it) }
+                    item.metadata.genre?.let { MetadataChip(it) }
+                }
+
+                // Tags row
+                if (item.tags.isNotEmpty()) {
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        item.tags.take(4).forEach { tag ->
+                            Text(
+                                text = tag.replaceFirstChar { it.uppercase() },
+                                fontSize = 13.sp,
+                                color = Color.White.copy(alpha = 0.5f)
+                            )
+                            if (tag != item.tags.take(4).last()) {
+                                Text("·", fontSize = 13.sp, color = Color.White.copy(alpha = 0.3f))
+                            }
+                        }
+                    }
+                }
+
+                Spacer(Modifier.height(4.dp))
+
+                // Description
+                item.description?.let {
+                    Text(
+                        text = it,
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = Color.White.copy(alpha = 0.75f),
+                        maxLines = 4,
+                        overflow = TextOverflow.Ellipsis,
+                        lineHeight = 24.sp
+                    )
+                }
             }
-            
-            // Main content area - using Column for better vertical space management
-            Column(
-                verticalArrangement = Arrangement.spacedBy(32.dp)
-            ) {
-                // Hero image/thumbnail - responsive sizing
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(300.dp) // Fixed height for consistent layout
-                        .background(
-                            color = Color.Gray.copy(alpha = 0.3f),
-                            shape = RoundedCornerShape(16.dp)
-                        ),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Column(
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.spacedBy(16.dp)
-                    ) {
-                        Text(
-                            text = "📺",
-                            style = MaterialTheme.typography.displayLarge
-                        )
-                        Text(
-                            text = "Play",
-                            style = MaterialTheme.typography.headlineSmall,
-                            color = Color.White
-                        )
-                    }
-                }
-                
-                // Content details
-                Column(
-                    verticalArrangement = Arrangement.spacedBy(24.dp)
-                ) {
-                    // Title and content type
-                    Column(
-                        verticalArrangement = Arrangement.spacedBy(12.dp)
-                    ) {
-                        Text(
-                            text = item.title,
-                            style = MaterialTheme.typography.displaySmall,
-                            fontWeight = FontWeight.Bold,
-                            color = Color.White
-                        )
-                        
-                        Row(
-                            horizontalArrangement = Arrangement.spacedBy(16.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Box(
-                                modifier = Modifier
-                                    .background(
-                                        color = getContentTypeColor(item.contentType),
-                                        shape = RoundedCornerShape(8.dp)
-                                    )
-                                    .padding(horizontal = 16.dp, vertical = 8.dp)
-                            ) {
-                                Text(
-                                    text = item.contentType.name,
-                                    style = MaterialTheme.typography.titleMedium,
-                                    fontWeight = FontWeight.SemiBold,
-                                    color = Color.White
-                                )
-                            }
-                            
-                            if (item.isOfflineAvailable) {
-                                Row(
-                                    horizontalArrangement = Arrangement.spacedBy(6.dp),
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    Text(
-                                        text = "⬇️",
-                                        style = MaterialTheme.typography.titleMedium
-                                    )
-                                    Text(
-                                        text = "Available Offline",
-                                        style = MaterialTheme.typography.titleMedium,
-                                        color = Color.Green
-                                    )
-                                }
-                            }
-                        }
-                    }
-                    
-                    // Description
-                    item.description?.let { description ->
-                        Text(
-                            text = description,
-                            style = MaterialTheme.typography.headlineSmall,
-                            color = Color.White.copy(alpha = 0.8f),
-                            lineHeight = MaterialTheme.typography.headlineSmall.lineHeight
-                        )
-                    }
-                    
-                    // Additional details
-                    Column(
-                        verticalArrangement = Arrangement.spacedBy(12.dp)
-                    ) {
-                        DetailRow(title = "Duration", value = "2h 15m")
-                        DetailRow(title = "Quality", value = "4K HDR")
-                        DetailRow(title = "Audio", value = "Dolby Atmos")
-                        DetailRow(title = "Released", value = "2024")
-                    }
-                    
-                    // Action buttons with proper spacing
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(vertical = 16.dp),
-                        horizontalArrangement = Arrangement.spacedBy(20.dp)
-                    ) {
-                        // Play button - responsive sizing
-                        Surface(
-                            onClick = { onPlay(item) },
-                            modifier = Modifier
-                                .weight(1f, false) // Allow button to shrink if needed
-                                .scale(if (playButtonFocused) 1.05f else 1.0f) // Smaller scale for TV
-                                .onFocusChanged { focusState ->
-                                    playButtonFocused = focusState.isFocused
-                                }
-                                .background(
-                                    color = if (playButtonFocused) 
-                                        Color.White.copy(alpha = 0.9f)
-                                    else 
-                                        Color.White,
-                                    shape = RoundedCornerShape(12.dp)
-                                ),
-                            tonalElevation = if (playButtonFocused) 8.dp else 4.dp
-                        ) {
-                            Row(
-                                modifier = Modifier
-                                    .padding(horizontal = 24.dp, vertical = 14.dp)
-                                    .widthIn(min = 120.dp), // Minimum width for TV
-                                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Text(
-                                    text = "▶️",
-                                    style = MaterialTheme.typography.titleMedium
-                                )
-                                Text(
-                                    text = "Play",
-                                    style = MaterialTheme.typography.titleMedium,
-                                    fontWeight = FontWeight.SemiBold,
-                                    color = Color.Black
-                                )
-                            }
-                        }
-                        
-                        // Watchlist button - responsive sizing
-                        Surface(
-                            onClick = { onAddToWatchlist(item) },
-                            modifier = Modifier
-                                .weight(1f, false) // Allow button to shrink if needed
-                                .scale(if (watchlistButtonFocused) 1.05f else 1.0f) // Smaller scale for TV
-                                .onFocusChanged { focusState ->
-                                    watchlistButtonFocused = focusState.isFocused
-                                }
-                                .background(
-                                    color = if (watchlistButtonFocused) 
-                                        Color.Gray.copy(alpha = 0.6f)
-                                    else 
-                                        Color.Gray.copy(alpha = 0.3f),
-                                    shape = RoundedCornerShape(12.dp)
-                                ),
-                            tonalElevation = if (watchlistButtonFocused) 8.dp else 4.dp
-                        ) {
-                            Row(
-                                modifier = Modifier
-                                    .padding(horizontal = 24.dp, vertical = 14.dp)
-                                    .widthIn(min = 140.dp), // Minimum width for TV
-                                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Text(
-                                    text = "➕",
-                                    style = MaterialTheme.typography.titleMedium
-                                )
-                                Text(
-                                    text = "Watchlist",
-                                    style = MaterialTheme.typography.titleMedium,
-                                    fontWeight = FontWeight.SemiBold,
-                                    color = Color.White
-                                )
-                            }
-                        }
-                    }
-                }
-                
-                // Add bottom spacer to ensure buttons are always visible
-                Spacer(modifier = Modifier.height(48.dp))
+
+            // Bottom: action buttons
+            Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                DetailActionButton(
+                    label = "▶  Play",
+                    isPrimary = true,
+                    onClick = { onPlay(item) }
+                )
+                DetailActionButton(
+                    label = "+  Watchlist",
+                    isPrimary = false,
+                    onClick = { onAddToWatchlist(item) }
+                )
             }
         }
     }
@@ -291,35 +155,62 @@ fun ContentDetailScreen(
 
 @OptIn(ExperimentalTvMaterial3Api::class)
 @Composable
-private fun DetailRow(
-    title: String,
-    value: String,
-    modifier: Modifier = Modifier
+private fun DetailActionButton(
+    label: String,
+    isPrimary: Boolean,
+    onClick: () -> Unit
 ) {
-    Row(
-        modifier = modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically
+    var focused by remember { mutableStateOf(false) }
+    val scale by animateFloatAsState(
+        targetValue = if (focused) 1.05f else 1.0f,
+        animationSpec = tween(150),
+        label = "btnScale"
+    )
+    val bg = when {
+        isPrimary && focused -> Color.White
+        focused -> Color.White.copy(alpha = 0.35f)
+        else -> Color(0xFF2A2A2A)
+    }
+    val fg = if (isPrimary && focused) Color.Black else Color.White
+    val shape = RoundedCornerShape(8.dp)
+
+    Surface(
+        onClick = onClick,
+        modifier = Modifier
+            .scale(scale)
+            .onFocusChanged { focused = it.isFocused }
+            .then(if (focused) Modifier.border(2.dp, Color.White, shape) else Modifier),
+        tonalElevation = 0.dp,
+        colors = ClickableSurfaceDefaults.colors(containerColor = Color.Transparent, focusedContainerColor = Color.Transparent, pressedContainerColor = Color.Transparent),
+        shape = ClickableSurfaceDefaults.shape(shape = shape)
     ) {
-        Text(
-            text = title,
-            style = MaterialTheme.typography.bodyLarge,
-            color = Color.White.copy(alpha = 0.7f)
-        )
-        Text(
-            text = value,
-            style = MaterialTheme.typography.bodyLarge,
-            fontWeight = FontWeight.Medium,
-            color = Color.White
-        )
+        Box(
+            modifier = Modifier
+                .background(bg, shape)
+                .padding(horizontal = 28.dp, vertical = 12.dp)
+        ) {
+            Text(
+                text = label,
+                style = MaterialTheme.typography.titleSmall,
+                fontWeight = FontWeight.SemiBold,
+                color = fg
+            )
+        }
     }
 }
 
-private fun getContentTypeColor(contentType: ContentType): Color {
-    return when (contentType) {
-        ContentType.Video -> Color(0xFF1976D2)    // Blue
-        ContentType.Audio -> Color(0xFF388E3C)    // Green
-        ContentType.Image -> Color(0xFFD32F2F)    // Red
-        ContentType.Mixed -> Color(0xFF7B1FA2)    // Purple
+@Composable
+private fun MetadataChip(text: String) {
+    Box(
+        modifier = Modifier
+            .border(1.dp, Color.White.copy(alpha = 0.25f), RoundedCornerShape(4.dp))
+            .padding(horizontal = 10.dp, vertical = 4.dp)
+    ) {
+        Text(
+            text = text,
+            fontSize = 13.sp,
+            color = Color.White.copy(alpha = 0.85f),
+            fontWeight = FontWeight.Medium
+        )
     }
 }

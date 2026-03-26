@@ -250,18 +250,24 @@ struct TVCardView: View {
                     Spacer()
                 }
             }
+        }
+        .buttonStyle(TVDarkButtonStyle())
+    }
+}
+
+// MARK: - Dark Button Style for TV
+struct TVDarkButtonStyle: ButtonStyle {
+    @Environment(\.isFocused) private var isFocused: Bool
+
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
             .background(
                 RoundedRectangle(cornerRadius: 16)
-                    .fill(isFocused ? Color.blue.opacity(0.3) : Color.gray.opacity(0.15))
-                    .strokeBorder(
-                        isFocused ? Color.blue : Color.clear,
-                        lineWidth: 3
-                    )
+                    .fill(isFocused ? Color.white.opacity(0.2) : Color(white: 0.15))
+                    .strokeBorder(isFocused ? Color.white : Color.clear, lineWidth: 3)
             )
             .scaleEffect(isFocused ? 1.05 : 1.0)
             .animation(.easeInOut(duration: 0.2), value: isFocused)
-        }
-        .buttonStyle(PlainButtonStyle())
     }
 }
 
@@ -475,15 +481,14 @@ struct TVFocusableButton<Content: View>: View {
         .buttonStyle(PlainButtonStyle())
         .background(
             RoundedRectangle(cornerRadius: 12)
+                .fill(isFocused ? Color.white.opacity(0.2) : Color(white: 0.15))
                 .strokeBorder(
                     isFocused ? Color.white : Color.clear,
                     lineWidth: 4
                 )
                 .shadow(
                     color: isFocused ? Color.white.opacity(0.4) : Color.clear,
-                    radius: isFocused ? 8 : 0,
-                    x: 0,
-                    y: isFocused ? 4 : 0
+                    radius: isFocused ? 8 : 0
                 )
         )
         .scaleEffect(isFocused ? 1.08 : 1.0)

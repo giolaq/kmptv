@@ -1,6 +1,7 @@
 package com.kmptv.shared_core.repositories
 
 import com.kmptv.shared_core.models.*
+import com.kmptv.shared_core.services.CatalogService
 
 /**
  * Interface for content management operations
@@ -19,20 +20,24 @@ interface ContentRepository {
  */
 class ContentRepositoryImpl : ContentRepository {
     
-    // In-memory storage for demo purposes
-    // In real implementation, this would use SQLDelight database
     private val contentStorage = mutableMapOf<String, ContentItem>()
-    
-    init {
-        // Initialize with sample content for demo
-        initializeSampleContent()
-    }
+    private val catalogService = CatalogService()
+    private var catalogLoaded = false
     
     override suspend fun getContentItems(limit: Int, offset: Int): Result<List<ContentItem>> {
+        if (!catalogLoaded) {
+            val result = catalogService.fetchCatalog()
+            result.onSuccess { items ->
+                items.forEach { contentStorage[it.id] = it }
+                catalogLoaded = true
+            }.onFailure {
+                // Fall back to sample content if fetch fails
+                if (contentStorage.isEmpty()) initializeSampleContent()
+            }
+        }
         return try {
             val allItems = contentStorage.values.sortedByDescending { it.priority }
-            val paginatedItems = allItems.drop(offset).take(limit)
-            Result.Success(paginatedItems)
+            Result.Success(allItems.drop(offset).take(limit))
         } catch (e: Exception) {
             Result.Error(e, "Failed to retrieve content items: ${e.message}")
         }
