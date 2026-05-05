@@ -11,133 +11,109 @@ import AVFoundation
 
 struct VideoPlayerView: View {
     let item: ContentItem
-    let videoURL: String
+    let videoURL: URL
     let onDismiss: () -> Void
-    
+
     @State private var player: AVPlayer?
     @State private var isPlaying = false
     @State private var showingControls = true
-    @Environment(\.isFocused) private var isFocused: Bool
-    
-    // Demo video URL
-    private let defaultVideoURL = "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4"
-    
-    init(item: ContentItem, videoURL: String? = nil, onDismiss: @escaping () -> Void) {
-        self.item = item
-        self.videoURL = videoURL ?? "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4"
-        self.onDismiss = onDismiss
-    }
-    
+    @State private var currentSeconds: Double = 0
+    @State private var durationSeconds: Double = 0
+
     var body: some View {
         ZStack {
-            // Background
-            Color.black
-                .ignoresSafeArea()
-            
-            // Video Player
+            Color.black.ignoresSafeArea()
+
             if let player = player {
                 VideoPlayer(player: player) {
-                    // Custom overlay controls
                     if showingControls {
                         VideoPlayerControlsOverlay(
                             player: player,
                             item: item,
                             isPlaying: $isPlaying,
+                            currentSeconds: currentSeconds,
+                            durationSeconds: durationSeconds,
                             onDismiss: onDismiss
                         )
                     }
                 }
             } else {
-                // Loading state
                 VStack(spacing: 20) {
                     ProgressView()
                         .scaleEffect(2.0)
                         .progressViewStyle(CircularProgressViewStyle(tint: .white))
-                    
+
                     Text("Loading video...")
                         .font(.title2)
                         .foregroundColor(.white)
                 }
             }
         }
-        .onAppear {
-            setupPlayer()
-        }
-        .onDisappear {
-            cleanupPlayer()
-        }
+        .onAppear { setupPlayer() }
+        .onDisappear { cleanupPlayer() }
         .onReceive(NotificationCenter.default.publisher(for: .AVPlayerItemDidPlayToEndTime)) { _ in
-            // Handle video end
             player?.seek(to: .zero)
             isPlaying = false
         }
         .onExitCommand {
-            // Handle menu button - go back
             player?.pause()
             onDismiss()
         }
     }
-    
+
     private func setupPlayer() {
-        guard let url = URL(string: videoURL) else {
-            print("Invalid video URL: \(videoURL)")
-            return
-        }
-        
-        let playerItem = AVPlayerItem(url: url)
+        let playerItem = AVPlayerItem(url: videoURL)
         let newPlayer = AVPlayer(playerItem: playerItem)
-        
-        // Configure player for TV
+
         newPlayer.allowsExternalPlayback = true
         newPlayer.usesExternalPlaybackWhileExternalScreenIsActive = true
-        
-        self.player = newPlayer
 
-        // Auto-play when ready
+        self.player = newPlayer
         newPlayer.play()
 
-        // Add time observer for play state
-        let interval = CMTime(seconds: 0.1, preferredTimescale: CMTimeScale(NSEC_PER_SEC))
-        newPlayer.addPeriodicTimeObserver(forInterval: interval, queue: .main) { _ in
+        // Poll playback state + position every 0.5s.
+        let interval = CMTime(seconds: 0.5, preferredTimescale: CMTimeScale(NSEC_PER_SEC))
+        newPlayer.addPeriodicTimeObserver(forInterval: interval, queue: .main) { time in
             isPlaying = newPlayer.timeControlStatus == .playing
+            currentSeconds = CMTimeGetSeconds(time)
+            if let d = newPlayer.currentItem?.duration, CMTIME_IS_NUMERIC(d) {
+                durationSeconds = CMTimeGetSeconds(d)
+            }
         }
-        
-        // Auto-hide controls after 5 seconds
+
+        // Auto-hide controls after 5s.
         DispatchQueue.main.asyncAfter(deadline: .now() + 5.0) {
             withAnimation(.easeOut(duration: 0.3)) {
                 showingControls = false
             }
         }
     }
-    
+
     private func cleanupPlayer() {
         player?.pause()
         player = nil
     }
 }
 
-struct VideoPlayerControlsOverlay: View {
+private struct VideoPlayerControlsOverlay: View {
     let player: AVPlayer
     let item: ContentItem
     @Binding var isPlaying: Bool
+    let currentSeconds: Double
+    let durationSeconds: Double
     let onDismiss: () -> Void
-    
-    // Focus states removed for tvOS compatibility - buttons will use default tvOS focus handling
-    
+
     var body: some View {
         VStack(spacing: 0) {
             // Top controls
             HStack {
-                // Back button
                 Button(action: {
                     player.pause()
                     onDismiss()
                 }) {
                     HStack(spacing: 12) {
-                        Image(systemName: "chevron.left")
-                            .font(.title2)
-                        Text("Back")
-                            .font(.title2)
+                        Image(systemName: "chevron.left").font(.title2)
+                        Text("Back").font(.title2)
                     }
                     .foregroundColor(.white)
                     .padding(.horizontal, 20)
@@ -147,11 +123,10 @@ struct VideoPlayerControlsOverlay: View {
                             .fill(Color(white: 0.15))
                     )
                 }
-                .buttonStyle(TVDarkButtonStyle())
-                
+                .buttonStyle(TVFocusButtonStyle())
+
                 Spacer()
-                
-                // Title
+
                 Text(item.title)
                     .font(.title)
                     .fontWeight(.bold)
@@ -161,39 +136,44 @@ struct VideoPlayerControlsOverlay: View {
             }
             .padding(.horizontal, 60)
             .padding(.top, 60)
-            
+
             Spacer()
-            
-            // Bottom controls
+
             VStack(spacing: 30) {
-                // Progress bar (simplified for demo)
+                // Progress bar wired to real player state.
+                let progress: Double = durationSeconds > 0
+                    ? min(max(currentSeconds / durationSeconds, 0), 1)
+                    : 0
                 HStack {
-                    Text("00:00")
+                    Text(formatTime(currentSeconds))
                         .font(.caption)
                         .foregroundColor(.white.opacity(0.8))
-                    
-                    Rectangle()
-                        .fill(Color.white.opacity(0.3))
-                        .frame(height: 4)
-                        .overlay(
+
+                    GeometryReader { geo in
+                        ZStack(alignment: .leading) {
+                            Rectangle()
+                                .fill(Color.white.opacity(0.3))
+                                .frame(height: 4)
                             Rectangle()
                                 .fill(Color.blue)
-                                .frame(width: 100) // Demo progress
-                                .frame(maxWidth: .infinity, alignment: .leading)
-                        )
-                    
-                    Text("10:30")
+                                .frame(width: geo.size.width * CGFloat(progress), height: 4)
+                        }
+                    }
+                    .frame(height: 4)
+
+                    Text(formatTime(durationSeconds))
                         .font(.caption)
                         .foregroundColor(.white.opacity(0.8))
                 }
                 .padding(.horizontal, 60)
-                
+
                 // Control buttons
                 HStack(spacing: 40) {
-                    // Seek backward
                     Button(action: {
-                        let currentTime = player.currentTime()
-                        let newTime = CMTimeSubtract(currentTime, CMTime(seconds: 10, preferredTimescale: 1))
+                        let newTime = CMTimeSubtract(
+                            player.currentTime(),
+                            CMTime(seconds: 10, preferredTimescale: 1)
+                        )
                         player.seek(to: max(newTime, .zero))
                     }) {
                         Image(systemName: "gobackward.10")
@@ -202,15 +182,10 @@ struct VideoPlayerControlsOverlay: View {
                             .padding(12)
                             .background(RoundedRectangle(cornerRadius: 10).fill(Color(white: 0.15)))
                     }
-                    .buttonStyle(TVDarkButtonStyle())
-                    
-                    // Play/Pause button
+                    .buttonStyle(TVFocusButtonStyle())
+
                     Button(action: {
-                        if isPlaying {
-                            player.pause()
-                        } else {
-                            player.play()
-                        }
+                        if isPlaying { player.pause() } else { player.play() }
                     }) {
                         Image(systemName: isPlaying ? "pause.circle.fill" : "play.circle.fill")
                             .font(.system(size: 64))
@@ -218,12 +193,13 @@ struct VideoPlayerControlsOverlay: View {
                             .padding(12)
                             .background(Circle().fill(Color(white: 0.15)))
                     }
-                    .buttonStyle(TVDarkButtonStyle())
-                    
-                    // Seek forward
+                    .buttonStyle(TVFocusButtonStyle(cornerRadius: 40))
+
                     Button(action: {
-                        let currentTime = player.currentTime()
-                        let newTime = CMTimeAdd(currentTime, CMTime(seconds: 10, preferredTimescale: 1))
+                        let newTime = CMTimeAdd(
+                            player.currentTime(),
+                            CMTime(seconds: 10, preferredTimescale: 1)
+                        )
                         player.seek(to: newTime)
                     }) {
                         Image(systemName: "goforward.10")
@@ -232,7 +208,7 @@ struct VideoPlayerControlsOverlay: View {
                             .padding(12)
                             .background(RoundedRectangle(cornerRadius: 10).fill(Color(white: 0.15)))
                     }
-                    .buttonStyle(TVDarkButtonStyle())
+                    .buttonStyle(TVFocusButtonStyle())
                 }
             }
             .padding(.bottom, 80)
@@ -246,16 +222,37 @@ struct VideoPlayerControlsOverlay: View {
             )
         }
     }
+
+    private func formatTime(_ seconds: Double) -> String {
+        guard seconds.isFinite, seconds > 0 else { return "0:00" }
+        let totalSec = Int(seconds)
+        let h = totalSec / 3600
+        let m = (totalSec % 3600) / 60
+        let s = totalSec % 60
+        if h > 0 {
+            return String(format: "%d:%02d:%02d", h, m, s)
+        } else {
+            return String(format: "%d:%02d", m, s)
+        }
+    }
 }
 
 #Preview {
     VideoPlayerView(
         item: ContentItem(
+            id: "preview",
             title: "Sample Video",
-            contentType: .video,
             description: "A sample video for testing",
-            isOfflineAvailable: true
+            thumbnailUrl: nil,
+            videoUrl: URL(string: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4"),
+            genre: "Animation",
+            releaseYear: 2008,
+            contentRating: "TV-G",
+            durationMs: 596_000,
+            tags: ["animation"],
+            priority: 0
         ),
+        videoURL: URL(string: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4")!,
         onDismiss: {}
     )
 }

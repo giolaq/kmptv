@@ -31,13 +31,13 @@ fun TVCard(
     item: ContentItem,
     onItemClick: (ContentItem) -> Unit,
     onItemFocused: (ContentItem) -> Unit = {},
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     var isFocused by remember { mutableStateOf(false) }
     val scale by animateFloatAsState(
         targetValue = if (isFocused) 1.08f else 1.0f,
         animationSpec = tween(durationMillis = 200),
-        label = "cardScale"
+        label = "cardScale",
     )
     val shape = RoundedCornerShape(8.dp)
 
@@ -52,25 +52,26 @@ fun TVCard(
                 if (it.isFocused) onItemFocused(item)
             }
             .then(
-                if (isFocused) Modifier
-                    .shadow(16.dp, shape)
-                    .border(2.dp, Color.White, shape)
-                else Modifier
+                if (isFocused) {
+                    Modifier
+                        .shadow(16.dp, shape)
+                        .border(2.dp, Color.White, shape)
+                } else {
+                    Modifier
+                },
             ),
         tonalElevation = if (isFocused) 8.dp else 2.dp,
-        colors = ClickableSurfaceDefaults.colors(containerColor = Color.Transparent, focusedContainerColor = Color.Transparent, pressedContainerColor = Color.Transparent),
-        shape = ClickableSurfaceDefaults.shape(shape = shape)
+        colors = transparentSurfaceColors(),
+        shape = ClickableSurfaceDefaults.shape(shape = shape),
     ) {
         Box(modifier = Modifier.fillMaxSize()) {
-            // Poster image
             AsyncImage(
                 model = item.thumbnailUrl,
                 contentDescription = item.title,
                 contentScale = ContentScale.Crop,
-                modifier = Modifier.fillMaxSize().clip(shape)
+                modifier = Modifier.fillMaxSize().clip(shape),
             )
 
-            // Bottom gradient overlay for text readability
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -78,12 +79,11 @@ fun TVCard(
                     .align(Alignment.BottomCenter)
                     .background(
                         Brush.verticalGradient(
-                            colors = listOf(Color.Transparent, Color.Black.copy(alpha = 0.85f))
-                        )
-                    )
+                            colors = listOf(Color.Transparent, Color.Black.copy(alpha = 0.85f)),
+                        ),
+                    ),
             )
 
-            // Title at bottom
             Text(
                 text = item.title,
                 style = MaterialTheme.typography.titleSmall,
@@ -93,23 +93,22 @@ fun TVCard(
                 overflow = TextOverflow.Ellipsis,
                 modifier = Modifier
                     .align(Alignment.BottomStart)
-                    .padding(10.dp)
+                    .padding(10.dp),
             )
 
-            // Rating badge top-right
             item.metadata.genre?.let { genre ->
                 Box(
                     modifier = Modifier
                         .align(Alignment.TopEnd)
                         .padding(8.dp)
                         .background(Color.Black.copy(alpha = 0.6f), RoundedCornerShape(4.dp))
-                        .padding(horizontal = 6.dp, vertical = 2.dp)
+                        .padding(horizontal = 6.dp, vertical = 2.dp),
                 ) {
                     Text(
                         text = genre,
                         fontSize = 11.sp,
                         color = Color.White.copy(alpha = 0.9f),
-                        fontWeight = FontWeight.Medium
+                        fontWeight = FontWeight.Medium,
                     )
                 }
             }

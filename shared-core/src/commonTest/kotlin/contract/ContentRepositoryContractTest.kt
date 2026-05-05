@@ -1,124 +1,122 @@
 package com.kmptv.shared_core.contract
 
+import com.kmptv.shared_core.models.*
+import com.kmptv.shared_core.repositories.ContentRepositoryImpl
+import com.kmptv.shared_core.services.CatalogSource
+import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
-import kotlin.test.fail
+import kotlin.test.assertEquals
+import kotlin.test.assertFalse
+import kotlin.test.assertNotNull
+import kotlin.test.assertNull
+import kotlin.test.assertTrue
 
 /**
- * Contract test for ContentRepository interface
- * These tests MUST FAIL until implementation is complete
+ * Contract tests for [ContentRepositoryImpl].
+ *
+ * These tests inject a [FakeCatalogSource] so they are deterministic and do
+ * not depend on network access — the iOS simulator's Kotlin test runner has
+ * no reachable network, which previously made these tests silently pass only
+ * because a hardcoded sample fallback masked the fetch failure.
  */
 class ContentRepositoryContractTest {
-    
+
+    private fun newRepository(
+        catalog: CatalogSource = defaultFakeCatalog(),
+    ): ContentRepositoryImpl = ContentRepositoryImpl(catalog)
+
     @Test
-    fun test_getContentItems_should_return_list_with_default_limit() {
-        fail("Implementation not yet available - test should fail until ContentRepository is implemented")
-        
-        // TODO: Implement when ContentRepository interface is available
-        // val repository = ContentRepositoryImpl()
-        // val result = repository.getContentItems()
-        // assertTrue(result.isSuccess)
-        // val items = result.getOrNull()
-        // assertNotNull(items)
-        // assertTrue(items.size <= 50) // Default limit
+    fun getContentItems_respects_default_limit() = runTest {
+        val result = newRepository().getContentItems()
+        assertTrue(result.isSuccess, "Expected success, got $result")
+        val items = result.getOrNull()
+        assertNotNull(items)
+        assertTrue(items.size <= 50, "Default limit should be 50, got ${items.size}")
+        assertTrue(items.isNotEmpty(), "Fake catalogue should have items")
     }
-    
+
     @Test
-    fun test_getContentItems_should_respect_custom_limit_and_offset() {
-        fail("Implementation not yet available - test should fail until ContentRepository is implemented")
-        
-        // TODO: Implement when ContentRepository interface is available
-        // val repository = ContentRepositoryImpl()
-        // val result = repository.getContentItems(limit = 10, offset = 5)
-        // assertTrue(result.isSuccess)
-        // val items = result.getOrNull()
-        // assertNotNull(items)
-        // assertTrue(items.size <= 10)
+    fun getContentItems_respects_custom_limit_and_offset() = runTest {
+        val result = newRepository().getContentItems(limit = 2, offset = 1)
+        assertTrue(result.isSuccess)
+        val items = result.getOrNull()
+        assertNotNull(items)
+        assertTrue(items.size <= 2)
     }
-    
+
     @Test
-    fun test_getContentItem_should_return_item_when_exists() {
-        fail("Implementation not yet available - test should fail until ContentRepository is implemented")
-        
-        // TODO: Implement when ContentRepository interface is available
-        // val repository = ContentRepositoryImpl()
-        // val existingId = "content-123"
-        // val result = repository.getContentItem(existingId)
-        // assertTrue(result.isSuccess)
-        // val item = result.getOrNull()
-        // assertNotNull(item)
-        // assertEquals(existingId, item.id)
+    fun getContentItems_propagates_catalog_failure() = runTest {
+        val failingSource = CatalogSource {
+            Result.Error(IllegalStateException("offline"), "no catalogue for you")
+        }
+        val result = newRepository(failingSource).getContentItems()
+        assertFalse(result.isSuccess, "Expected failure result, got $result")
     }
-    
+
     @Test
-    fun test_getContentItem_should_return_null_when_not_exists() {
-        fail("Implementation not yet available - test should fail until ContentRepository is implemented")
-        
-        // TODO: Implement when ContentRepository interface is available
-        // val repository = ContentRepositoryImpl()
-        // val nonExistentId = "non-existent-id"
-        // val result = repository.getContentItem(nonExistentId)
-        // assertTrue(result.isSuccess)
-        // val item = result.getOrNull()
-        // assertNull(item)
+    fun getContentItem_returns_null_for_unknown_id() = runTest {
+        val repository = newRepository()
+        // Prime the storage first.
+        repository.getContentItems()
+        val result = repository.getContentItem("non-existent-id")
+        assertTrue(result.isSuccess)
+        assertNull(result.getOrNull())
     }
-    
+
     @Test
-    fun test_searchContent_should_return_matching_items() {
-        fail("Implementation not yet available - test should fail until ContentRepository is implemented")
-        
-        // TODO: Implement when ContentRepository interface is available
-        // val repository = ContentRepositoryImpl()
-        // val query = "comedy"
-        // val result = repository.searchContent(query)
-        // assertTrue(result.isSuccess)
-        // val items = result.getOrNull()
-        // assertNotNull(items)
-        // items.forEach { item ->
-        //     assertTrue(item.title.contains(query, ignoreCase = true) || 
-        //               item.description?.contains(query, ignoreCase = true) == true)
-        // }
+    fun getContentItem_returns_item_when_present() = runTest {
+        val repository = newRepository()
+        val items = repository.getContentItems().getOrThrow()
+        val first = items.first()
+        val fetched = repository.getContentItem(first.id).getOrThrow()
+        assertNotNull(fetched)
+        assertEquals(first.id, fetched.id)
     }
-    
+
     @Test
-    fun test_markContentAccessed_should_update_lastAccessed_timestamp() {
-        fail("Implementation not yet available - test should fail until ContentRepository is implemented")
-        
-        // TODO: Implement when ContentRepository interface is available
-        // val repository = ContentRepositoryImpl()
-        // val contentId = "content-123"
-        // val result = repository.markContentAccessed(contentId)
-        // assertTrue(result.isSuccess)
-        // 
-        // // Verify timestamp was updated
-        // val item = repository.getContentItem(contentId).getOrNull()
-        // assertNotNull(item?.lastAccessed)
+    fun searchContent_matches_title_and_tags() = runTest {
+        val repository = newRepository()
+        repository.getContentItems()
+        val results = repository.searchContent("animation").getOrThrow()
+        assertTrue(
+            results.isNotEmpty(),
+            "Search for 'animation' should match the fake catalogue, got 0 items",
+        )
+        assertTrue(
+            results.all { r ->
+                r.title.contains("animation", ignoreCase = true) ||
+                    r.description?.contains("animation", ignoreCase = true) == true ||
+                    r.tags.any { it.contains("animation", ignoreCase = true) }
+            },
+        )
     }
-    
+
     @Test
-    fun test_setContentOfflineAvailable_should_update_offline_status() {
-        fail("Implementation not yet available - test should fail until ContentRepository is implemented")
-        
-        // TODO: Implement when ContentRepository interface is available
-        // val repository = ContentRepositoryImpl()
-        // val contentId = "content-123"
-        // val result = repository.setContentOfflineAvailable(contentId, true)
-        // assertTrue(result.isSuccess)
-        //
-        // // Verify offline status was updated
-        // val item = repository.getContentItem(contentId).getOrNull()
-        // assertTrue(item?.isOfflineAvailable == true)
+    fun markContentAccessed_updates_lastAccessed_timestamp() = runTest {
+        val repository = newRepository()
+        val items = repository.getContentItems().getOrThrow()
+        val id = items.first().id
+
+        val beforeStamp = nowMillis()
+        val result = repository.markContentAccessed(id)
+        assertTrue(result.isSuccess)
+
+        val updated = repository.getContentItem(id).getOrThrow()
+        assertNotNull(updated)
+        assertNotNull(updated.lastAccessed)
+        assertTrue(
+            updated.lastAccessed!! >= beforeStamp,
+            "lastAccessed (${updated.lastAccessed}) should be >= $beforeStamp",
+        )
     }
-    
+
     @Test
-    fun test_syncContentWithRemote_should_return_sync_status() {
-        fail("Implementation not yet available - test should fail until ContentRepository is implemented")
-        
-        // TODO: Implement when ContentRepository interface is available
-        // val repository = ContentRepositoryImpl()
-        // val result = repository.syncContentWithRemote()
-        // assertTrue(result.isSuccess)
-        // val syncStatus = result.getOrNull()
-        // assertNotNull(syncStatus)
-        // assertTrue(syncStatus.lastSyncTimestamp > 0)
+    fun getContentItems_only_fetches_once_on_success() = runTest {
+        val fake = defaultFakeCatalog()
+        val repository = newRepository(fake)
+        repository.getContentItems()
+        repository.getContentItems()
+        repository.getContentItems()
+        assertEquals(1, fake.callCount, "Catalogue should be fetched lazily only once")
     }
 }

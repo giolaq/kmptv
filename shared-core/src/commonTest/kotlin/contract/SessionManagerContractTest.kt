@@ -1,132 +1,89 @@
 package com.kmptv.shared_core.contract
 
+import com.kmptv.shared_core.models.*
+import com.kmptv.shared_core.services.SessionManagerImpl
+import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
-import kotlin.test.fail
+import kotlin.test.assertEquals
+import kotlin.test.assertFalse
+import kotlin.test.assertNotNull
+import kotlin.test.assertNull
+import kotlin.test.assertTrue
 
-/**
- * Contract test for SessionManager interface
- * These tests MUST FAIL until implementation is complete
- */
 class SessionManagerContractTest {
-    
+
+    private fun deviceInfo(): DeviceInfo =
+        DeviceInfoDefaults.forPlatform(deviceId = "test-device")
+
     @Test
-    fun test_createGuestSession_should_return_valid_session() {
-        fail("Implementation not yet available - test should fail until SessionManager is implemented")
-        
-        // TODO: Implement when SessionManager interface is available
-        // val sessionManager = SessionManagerImpl()
-        // val deviceInfo = DeviceInfo(...)
-        // val result = sessionManager.createGuestSession(deviceInfo)
-        // assertTrue(result.isSuccess)
-        // val session = result.getOrNull()
-        // assertNotNull(session)
-        // assertNotNull(session.sessionId)
-        // assertNull(session.userId) // Guest session
-        // assertFalse(session.isAuthenticated)
+    fun createGuestSession_returns_valid_session() = runTest {
+        val manager = SessionManagerImpl()
+        val result = manager.createGuestSession(deviceInfo())
+        assertTrue(result.isSuccess)
+        val session = result.getOrThrow()
+        assertTrue(session.sessionId.isNotEmpty())
+        assertNull(session.userId)
+        assertFalse(session.isAuthenticated)
     }
-    
+
     @Test
-    fun test_authenticateUser_should_return_authenticated_session_with_valid_credentials() {
-        fail("Implementation not yet available - test should fail until SessionManager is implemented")
-        
-        // TODO: Implement when SessionManager interface is available
-        // val sessionManager = SessionManagerImpl()
-        // val credentials = UserCredentials(username = "testuser", password = "password123")
-        // val result = sessionManager.authenticateUser(credentials)
-        // assertTrue(result.isSuccess)
-        // val session = result.getOrNull()
-        // assertNotNull(session)
-        // assertTrue(session.isAuthenticated)
-        // assertNotNull(session.userId)
+    fun authenticateUser_succeeds_with_valid_credentials() = runTest {
+        val manager = SessionManagerImpl()
+        val result = manager.authenticateUser(
+            UserCredentials(username = "testuser", password = "password123"),
+        )
+        assertTrue(result.isSuccess, "Expected success: $result")
+        val session = result.getOrThrow()
+        assertTrue(session.isAuthenticated)
+        assertEquals("testuser", session.userId)
     }
-    
+
     @Test
-    fun test_authenticateUser_should_fail_with_invalid_credentials() {
-        fail("Implementation not yet available - test should fail until SessionManager is implemented")
-        
-        // TODO: Implement when SessionManager interface is available
-        // val sessionManager = SessionManagerImpl()
-        // val invalidCredentials = UserCredentials(username = "invalid", password = "wrong")
-        // val result = sessionManager.authenticateUser(invalidCredentials)
-        // assertTrue(result.isFailure)
+    fun authenticateUser_fails_with_invalid_credentials() = runTest {
+        val manager = SessionManagerImpl()
+        val result = manager.authenticateUser(
+            UserCredentials(username = "not-a-user", password = "wrong"),
+        )
+        assertFalse(result.isSuccess)
     }
-    
+
     @Test
-    fun test_updateLastActivity_should_extend_session_lifetime() {
-        fail("Implementation not yet available - test should fail until SessionManager is implemented")
-        
-        // TODO: Implement when SessionManager interface is available
-        // val sessionManager = SessionManagerImpl()
-        // val deviceInfo = DeviceInfo(...)
-        // sessionManager.createGuestSession(deviceInfo)
-        // 
-        // val originalActivity = getCurrentTimestamp()
-        // Thread.sleep(100) // Small delay
-        // sessionManager.updateLastActivity()
-        // 
-        // // Verify activity was updated
-        // val session = sessionManager.getCurrentSession()
-        // assertTrue(session?.lastActivity ?: 0 > originalActivity)
+    fun authenticateUser_fails_with_empty_credentials() = runTest {
+        val manager = SessionManagerImpl()
+        val result = manager.authenticateUser(UserCredentials())
+        assertFalse(result.isSuccess)
     }
-    
+
     @Test
-    fun test_isSessionValid_should_return_true_for_active_session() {
-        fail("Implementation not yet available - test should fail until SessionManager is implemented")
-        
-        // TODO: Implement when SessionManager interface is available
-        // val sessionManager = SessionManagerImpl()
-        // val deviceInfo = DeviceInfo(...)
-        // sessionManager.createGuestSession(deviceInfo)
-        // 
-        // val isValid = sessionManager.isSessionValid()
-        // assertTrue(isValid)
+    fun updateLastActivity_advances_timestamp() = runTest {
+        val manager = SessionManagerImpl()
+        manager.createGuestSession(deviceInfo())
+        val before = manager.getCurrentSession()?.lastActivity ?: 0
+        manager.updateLastActivity()
+        val after = manager.getCurrentSession()?.lastActivity ?: 0
+        assertTrue(after >= before, "activity did not advance: before=$before after=$after")
     }
-    
+
     @Test
-    fun test_isSessionValid_should_return_false_for_expired_session() {
-        fail("Implementation not yet available - test should fail until SessionManager is implemented")
-        
-        // TODO: Implement when SessionManager interface is available
-        // val sessionManager = SessionManagerImpl()
-        // val deviceInfo = DeviceInfo(...)
-        // sessionManager.createGuestSession(deviceInfo)
-        // 
-        // // Simulate expired session (this would need test-specific timeout handling)
-        // // mockTimeAdvancement(sessionTimeout + 1)
-        // 
-        // val isValid = sessionManager.isSessionValid()
-        // assertFalse(isValid)
+    fun isSessionValid_is_true_for_fresh_session() = runTest {
+        val manager = SessionManagerImpl()
+        manager.createGuestSession(deviceInfo())
+        assertTrue(manager.isSessionValid())
     }
-    
+
     @Test
-    fun test_renewSession_should_extend_valid_session() {
-        fail("Implementation not yet available - test should fail until SessionManager is implemented")
-        
-        // TODO: Implement when SessionManager interface is available
-        // val sessionManager = SessionManagerImpl()
-        // val deviceInfo = DeviceInfo(...)
-        // val originalSession = sessionManager.createGuestSession(deviceInfo).getOrNull()
-        // 
-        // val result = sessionManager.renewSession()
-        // assertTrue(result.isSuccess)
-        // val renewedSession = result.getOrNull()
-        // assertNotNull(renewedSession)
-        // assertEquals(originalSession?.sessionId, renewedSession.sessionId)
-        // assertTrue(renewedSession.lastActivity > originalSession?.lastActivity ?: 0)
+    fun endSession_clears_current_session() = runTest {
+        val manager = SessionManagerImpl()
+        manager.createGuestSession(deviceInfo())
+        manager.endSession()
+        assertNull(manager.getCurrentSession())
+        assertFalse(manager.isSessionValid())
     }
-    
+
     @Test
-    fun test_endSession_should_invalidate_current_session() {
-        fail("Implementation not yet available - test should fail until SessionManager is implemented")
-        
-        // TODO: Implement when SessionManager interface is available
-        // val sessionManager = SessionManagerImpl()
-        // val deviceInfo = DeviceInfo(...)
-        // sessionManager.createGuestSession(deviceInfo)
-        // 
-        // sessionManager.endSession()
-        // 
-        // val isValid = sessionManager.isSessionValid()
-        // assertFalse(isValid)
+    fun getCurrentSession_starts_null() = runTest {
+        val manager = SessionManagerImpl()
+        assertNotNull(manager) // sanity
+        assertNull(manager.getCurrentSession())
     }
 }

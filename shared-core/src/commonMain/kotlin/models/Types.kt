@@ -1,110 +1,71 @@
 package com.kmptv.shared_core.models
 
 /**
- * Platform enumeration for supported TV platforms
+ * Platform enumeration for supported TV platforms.
+ *
+ * FireTV is a future extension; until a Fire TV module is wired into
+ * `settings.gradle.kts` it is intentionally absent so stale branches do not
+ * linger in production `when` statements.
  */
 enum class Platform {
     AndroidTV,
     AppleTV,
-    FireTV
 }
 
 /**
- * Content type enumeration
+ * Content type enumeration.
  */
 enum class ContentType {
     Video,
     Audio,
     Image,
-    Mixed
+    Mixed,
 }
 
 /**
- * Input method enumeration for TV remotes and controllers
+ * Input method enumeration for TV remotes and controllers.
  */
 enum class InputMethod {
     RemoteControl,  // Traditional TV remote
     SiriRemote,     // Apple TV Siri Remote
     GameController, // Gaming controllers
-    Voice          // Voice input commands
 }
 
 /**
- * Navigation style enumeration
+ * Navigation style enumeration.
  */
 enum class NavigationStyle {
-    DirectionalPad,   // Up/Down/Left/Right navigation
-    TouchGestures,    // Swipe and touch gestures
-    VoiceNavigation   // Voice-controlled navigation
+    DirectionalPad,
+    TouchGestures,
+    VoiceNavigation,
 }
 
 /**
- * Navigation result for directional input
- */
-data class NavigationResult(
-    val success: Boolean,
-    val newFocusedItem: String?,
-    val boundaryReached: Boolean = false
-)
-
-/**
- * Navigation state enumeration
- */
-enum class NavigationState {
-    Grid,
-    List,
-    Details,
-    Settings,
-    Search
-}
-
-/**
- * Download status for offline content
- */
-enum class DownloadStatus {
-    Pending,
-    Downloading,
-    Completed,
-    Failed,
-    Cancelled
-}
-
-/**
- * Network connection type
+ * Network connection type.
  */
 enum class NetworkType {
     WiFi,
     Ethernet,
     Cellular,
-    Unknown
+    Unknown,
 }
 
 /**
- * Parental control levels
- */
-enum class ParentalLevel {
-    None,
-    Mild,
-    Moderate,
-    Strict
-}
-
-/**
- * Video quality settings
+ * Video quality settings.
  */
 enum class VideoQuality {
     SD_480p,
     HD_720p,
     HD_1080p,
-    UHD_4K
+    UHD_4K,
 }
 
 /**
- * Media format information
+ * Media format information.
  */
 data class MediaFormat(
     val container: String,      // e.g., "mp4", "mkv"
     val videoCodec: String?,    // e.g., "h264", "hevc"
     val audioCodec: String?,    // e.g., "aac", "ac3"
-    val bitrate: Long?          // bits per second
+    val bitrate: Long?,         // bits per second
 )

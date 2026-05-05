@@ -11,14 +11,26 @@ import kotlinx.serialization.json.Json
 
 private const val CATALOG_URL = "https://giolaq.github.io/scrap-tv-feed/catalog.json"
 
-@Serializable
-data class CatalogImage(val poster_16x9: String)
+/**
+ * Abstraction over "somewhere to fetch the catalogue from".
+ *
+ * Lets [com.kmptv.shared_core.repositories.ContentRepositoryImpl] take a fake
+ * in tests so the repository contract can be exercised without depending on
+ * host-machine network access (the iOS simulator in particular cannot reach
+ * the live feed from the Kotlin test runner).
+ */
+fun interface CatalogSource {
+    suspend fun fetchCatalog(): Result<List<ContentItem>>
+}
 
 @Serializable
-data class CatalogSource(val type: String, val url: String)
+internal data class CatalogImage(val poster_16x9: String)
 
 @Serializable
-data class CatalogItem(
+internal data class CatalogMediaSource(val type: String, val url: String)
+
+@Serializable
+internal data class CatalogItem(
     val id: String,
     val type: String,
     val title: String,
@@ -31,18 +43,21 @@ data class CatalogItem(
     val release_year: Int = 0,
     val duration_sec: Int = 0,
     val images: CatalogImage,
-    val sources: List<CatalogSource> = emptyList(),
-    val description: String = ""
+    val sources: List<CatalogMediaSource> = emptyList(),
+    val description: String = "",
 )
 
 @Serializable
-data class CatalogResponse(
+internal data class CatalogResponse(
     val catalog_version: String = "",
     val updated_at: String = "",
-    val items: List<CatalogItem> = emptyList()
+    val items: List<CatalogItem> = emptyList(),
 )
 
-class CatalogService {
+/**
+ * Live [CatalogSource] backed by the hosted JSON catalogue feed.
+ */
+class CatalogService : CatalogSource {
 
     private val client = HttpClient {
         install(ContentNegotiation) {
@@ -50,7 +65,7 @@ class CatalogService {
         }
     }
 
-    suspend fun fetchCatalog(): Result<List<ContentItem>> {
+    override suspend fun fetchCatalog(): Result<List<ContentItem>> {
         return try {
             val response: CatalogResponse = client.get(CATALOG_URL).body()
             val items = response.items.mapIndexed { index, item ->
@@ -77,10 +92,10 @@ private fun CatalogItem.toContentItem(priority: Int): ContentItem {
             duration = duration_sec * 1000L,
             genre = genres.firstOrNull() ?: category,
             rating = content_rating,
-            releaseDate = release_year.toString()
+            releaseDate = release_year.toString(),
         ),
         tags = genres + listOfNotNull(if (trending) "trending" else null),
         priority = priority,
-        videoUrl = videoUrl
+        videoUrl = videoUrl,
     )
 }

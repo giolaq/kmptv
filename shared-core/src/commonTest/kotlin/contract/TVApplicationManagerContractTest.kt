@@ -1,75 +1,83 @@
 package com.kmptv.shared_core.contract
 
+import com.kmptv.shared_core.models.*
+import com.kmptv.shared_core.services.TVApplicationManagerImpl
+import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
-import kotlin.test.fail
+import kotlin.test.assertEquals
+import kotlin.test.assertFalse
+import kotlin.test.assertNotNull
+import kotlin.test.assertNull
+import kotlin.test.assertTrue
 
-/**
- * Contract test for TVApplicationManager interface
- * These tests MUST FAIL until implementation is complete
- */
 class TVApplicationManagerContractTest {
-    
+
+    private fun androidTvConfig(): PlatformConfiguration = PlatformConfiguration(
+        platform = Platform.AndroidTV,
+        inputMethods = listOf(InputMethod.RemoteControl),
+        screenResolution = Resolution(1920, 1080, "16:9"),
+        supportedFormats = listOf(MediaFormat("mp4", "h264", "aac", null)),
+        navigationStyle = NavigationStyle.DirectionalPad,
+    )
+
     @Test
-    fun test_initialize_should_return_TVApplication() {
-        fail("Implementation not yet available - test should fail until TVApplicationManager is implemented")
-        
-        // TODO: Implement when TVApplicationManager interface is available
-        // val manager = TVApplicationManagerImpl()
-        // val platform = Platform.AndroidTV
-        // val config = PlatformConfiguration(...)
-        // val result = manager.initialize(platform, config)
-        // assertTrue(result is TVApplication)
+    fun initialize_returns_tv_application() = runTest {
+        val manager = TVApplicationManagerImpl()
+        val app = manager.initialize(Platform.AndroidTV, androidTvConfig())
+        assertEquals(Platform.AndroidTV, app.platform)
+        assertTrue(app.isInitialized)
+        assertTrue(app.id.isNotEmpty())
     }
-    
+
     @Test
-    fun test_shutdown_should_complete_successfully() {
-        fail("Implementation not yet available - test should fail until TVApplicationManager is implemented")
-        
-        // TODO: Implement when TVApplicationManager interface is available
-        // val manager = TVApplicationManagerImpl()
-        // assertDoesNotThrow { manager.shutdown() }
+    fun getCurrentSession_is_null_before_initialization() = runTest {
+        val manager = TVApplicationManagerImpl()
+        assertNull(manager.getCurrentSession())
     }
-    
+
     @Test
-    fun test_getCurrentSession_should_return_UserSession_when_initialized() {
-        fail("Implementation not yet available - test should fail until TVApplicationManager is implemented")
-        
-        // TODO: Implement when TVApplicationManager interface is available
-        // val manager = TVApplicationManagerImpl()
-        // // Initialize first
-        // val session = manager.getCurrentSession()
-        // assertNotNull(session)
+    fun getCurrentSession_is_non_null_after_initialization() = runTest {
+        val manager = TVApplicationManagerImpl()
+        manager.initialize(Platform.AndroidTV, androidTvConfig())
+        assertNotNull(manager.getCurrentSession())
     }
-    
+
     @Test
-    fun test_getCurrentSession_should_return_null_when_not_initialized() {
-        fail("Implementation not yet available - test should fail until TVApplicationManager is implemented")
-        
-        // TODO: Implement when TVApplicationManager interface is available
-        // val manager = TVApplicationManagerImpl()
-        // val session = manager.getCurrentSession()
-        // assertNull(session)
+    fun shutdown_completes_without_throwing_and_clears_session() = runTest {
+        val manager = TVApplicationManagerImpl()
+        manager.initialize(Platform.AndroidTV, androidTvConfig())
+        manager.shutdown()
+        assertNull(manager.getCurrentSession())
     }
-    
+
     @Test
-    fun test_updateConfiguration_should_succeed_with_valid_config() {
-        fail("Implementation not yet available - test should fail until TVApplicationManager is implemented")
-        
-        // TODO: Implement when TVApplicationManager interface is available
-        // val manager = TVApplicationManagerImpl()
-        // val newConfig = PlatformConfiguration(...)
-        // val result = manager.updateConfiguration(newConfig)
-        // assertTrue(result.isSuccess)
+    fun updateConfiguration_succeeds_with_valid_config() = runTest {
+        val manager = TVApplicationManagerImpl()
+        manager.initialize(Platform.AndroidTV, androidTvConfig())
+        val newConfig = androidTvConfig().copy(uiScaling = 1.25f)
+        val result = manager.updateConfiguration(newConfig)
+        assertTrue(result.isSuccess, "Expected success, got $result")
     }
-    
+
     @Test
-    fun test_updateConfiguration_should_fail_with_invalid_config() {
-        fail("Implementation not yet available - test should fail until TVApplicationManager is implemented")
-        
-        // TODO: Implement when TVApplicationManager interface is available
-        // val manager = TVApplicationManagerImpl()
-        // val invalidConfig = PlatformConfiguration(...) // Invalid configuration
-        // val result = manager.updateConfiguration(invalidConfig)
-        // assertTrue(result.isFailure)
+    fun updateConfiguration_fails_on_platform_mismatch() = runTest {
+        val manager = TVApplicationManagerImpl()
+        manager.initialize(Platform.AndroidTV, androidTvConfig())
+        val appleConfig = PlatformConfiguration(
+            platform = Platform.AppleTV,
+            inputMethods = listOf(InputMethod.SiriRemote),
+            screenResolution = Resolution(1920, 1080, "16:9"),
+            supportedFormats = emptyList(),
+            navigationStyle = NavigationStyle.DirectionalPad,
+        )
+        val result = manager.updateConfiguration(appleConfig)
+        assertFalse(result.isSuccess)
+    }
+
+    @Test
+    fun updateConfiguration_fails_before_initialization() = runTest {
+        val manager = TVApplicationManagerImpl()
+        val result = manager.updateConfiguration(androidTvConfig())
+        assertFalse(result.isSuccess)
     }
 }
