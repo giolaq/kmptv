@@ -97,30 +97,6 @@ https://giolaq.github.io/scrap-tv-feed/catalog.json
 - There is no longer a hardcoded sample fallback — the feed is the single source of truth, and fetch failures surface as `Result.Error`.
 - The Apple TV app currently has its own Swift mirror of the feed model (`CatalogFeed.swift`) while the shared-core XCFramework bridge is being finished.
 
-## Recent Developments
-
-### May 2026 — Refactor and tvOS parity (`a3d41c5`)
-- **Apple TV UI ported to match Android TV** — hero banner, genre-grouped card rows, focus-scale poster cards, full-bleed detail view; consolidated `TVDarkButtonStyle` + `TVFocusableButton` into a single parameterised `TVFocusButtonStyle`, plus `TVCardButtonStyle` for poster cards.
-- **Dead code sweep** on `shared-core`: removed `HardwareInfo`, `DownloadProgress`, `NavigationResult/State`, `ParentalLevel`, `Result.Loading`, unused `Platform.FireTV` / `InputMethod.Voice`, and ~12 unused methods on domain models.
-- **Dependencies dropped**: SQLDelight, Kermit, Multiplatform Settings, `androidx.startup`, `androidx.leanback`, `navigation-compose`, `lifecycle-viewmodel-compose`.
-- **JVM-only time APIs purged** from `commonMain` (`System.currentTimeMillis`, `java.util.Date`, `SimpleDateFormat`, `Runtime`, `String.format`) — replaced with `kotlinx-datetime` helpers so `commonMain` compiles cleanly for iOS targets.
-- **Helpers extracted**: `SessionConstants`, `IdGenerator`, `DeviceInfoDefaults`, `Time`, `TimeFormat` — four duplicate `DeviceInfo` factories and three id-generator blocks collapsed into single helpers. On Android TV, `KmptvColors` and `FocusModifiers` (`tvFocusScale`, `transparentSurfaceColors`) consolidate the palette and focus behaviour.
-- **Real contract tests**: three tests that previously called `fail()` with no assertions were rewritten. **23 real tests now pass on Android and iOS.**
-- **Bug fixes**: `padEnd` precedence bug in `listContent`, unreachable `else` in `HealthCommands`, and Android TV seek-bar thumb offset (previous math simplified to ~1dp of travel — now uses `BoxWithConstraints` for real pixel positioning). Apple TV video progress bar wired to real `AVPlayer` `currentTime` / `duration` (previously hardcoded `00:00 / 10:30`).
-
-### March 2026 — Dark theme + hero layout (`1e773a8`, `27ec7cc`)
-- Dark button theme (`#2A2A2A`) across both platforms with bright highlight on focus.
-- `Surface` `containerColor` set to `Transparent` to remove the white-contour artifact from TV Material 3's default surface background.
-- Android TV home screen redesigned around a fixed 300 dp hero that reacts to the focused card, with card rows scrolling independently and a row-above-focused dissolve (300 ms alpha transition).
-- Screenshots refreshed to show the dark theme UI.
-
-### September 2025 — Video playback (`b537729`)
-- `VideoPlayerScreen.kt` (Android TV) with ExoPlayer and auto-play.
-- `VideoPlayerView.swift` (Apple TV) with `AVPlayer` and native controls.
-- `ContentDetailScreen.kt` with TV-optimised layout and remote-friendly navigation.
-- Sample streaming content: Big Buck Bunny, Elephant Dreams, Tears of Steel.
-- tvOS focus fixes — simplified to native focus handling with 1.08× scale and smooth animations.
-
 ## Getting Started
 
 ### Prerequisites
@@ -201,4 +177,4 @@ shared-core health --verbose
 
 ## License
 
-This project follows the specifications and implementations documented under `specs/`.
+Released under the [MIT License](LICENSE). See the `LICENSE` file for the full text.
