@@ -162,10 +162,10 @@ health --verbose
 
 ## Development Principles
 
-- **Shared domain, native UI** — business logic and the feed client live in `shared-core`; each platform renders its own UI using its native focus engine.
-- **Real dependencies in integration tests** — contract tests use a `FakeCatalogSource` but exercise the real repository, session manager and application manager code paths.
-- **`commonMain` stays pure Kotlin Multiplatform** — no JVM-only APIs slip in; dates, ids and formatting all go through `kotlinx-datetime` and tiny shared helpers.
-- **Feed is the source of truth** — no hardcoded sample fallbacks in product code; fetch failures surface as `Result.Error` and the UI handles them.
+- **Shared domain, native UI** — domain models, the catalogue feed client and session/app-manager logic live in `shared-core`; Android TV consumes it directly, and each platform renders its own UI using its native focus engine. The Apple TV app currently mirrors the feed client in Swift (`CatalogFeed.swift`) because `shared-core` does not yet publish a tvOS framework target — consolidating it onto `shared-core` is a pending migration, not a design choice.
+- **Real dependencies in integration tests** — contract tests instantiate the real `ContentRepositoryImpl`, `SessionManagerImpl` and `TVApplicationManagerImpl`. Only the network boundary is faked, via a `FakeCatalogSource` that returns a deterministic catalogue (the iOS simulator's Kotlin test runner has no reachable network).
+- **`commonMain` stays pure Kotlin Multiplatform** — no JVM-only APIs slip in; dates, ids and formatting all go through `kotlinx-datetime` and small shared helpers (`Time`, `TimeFormat`, `IdGenerator`).
+- **Feed is the source of truth** — no hardcoded sample fallbacks in product code; fetch failures surface as `Result.Error` on Android TV (rendered by `ErrorScreen`) and as `CatalogFeedError` on Apple TV (rendered by `ErrorView`).
 
 ## Key Files
 
