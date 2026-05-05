@@ -112,8 +112,9 @@ https://giolaq.github.io/scrap-tv-feed/catalog.json
 ./gradlew :shared-core:build
 
 # Run shared-core tests explicitly
-./gradlew :shared-core:jvmTest
-./gradlew :shared-core:iosSimulatorArm64Test
+./gradlew :shared-core:allTests                        # all targets (Android JVM + iOS simulator)
+./gradlew :shared-core:testDebugUnitTest               # Android unit tests only (runs on host JVM)
+./gradlew :shared-core:iosSimulatorArm64Test           # iOS simulator tests only
 
 # Android TV app — install a debug build on a connected device/emulator
 ./gradlew :androidtv-app:installDebug
@@ -132,23 +133,23 @@ The most recent refactor verified the following commands succeed:
 - `appletv-app` `xcodebuild` for Apple TV 4K (tvOS 18.2)
 - Manual smoke test: Android TV emulator and tvOS simulator both load feed data with working focus navigation.
 
-### CLI Usage
+### CLI (library surface)
 
-`shared-core` ships a small CLI useful for testing the catalogue feed and session plumbing:
+`shared-core` includes a `CLI` class (`cli/Main.kt`) that dispatches to
+`ContentCommands`, `SessionCommands`, and `HealthCommands`. It's currently
+exposed as a **library API** — there is no platform `main` wired up yet, so
+there's no `shared-core` shell binary you can invoke directly. Tests and the
+two TV apps call these commands in-process. Example argument arrays the `CLI`
+accepts once a platform entrypoint is added:
 
-```bash
-# Content
-shared-core content list --limit=10 --format=json
-shared-core content search "comedy"
-shared-core content get content-001
-
-# Session
-shared-core session create-guest --device-id=test-device
-shared-core session login --username=testuser --password=password123
-shared-core session status
-
-# Health
-shared-core health --verbose
+```
+content list --limit=10 --format=json
+content search comedy
+content get vega
+session create-guest --device-id=test-device
+session login --username=testuser --password=password123
+session status
+health --verbose
 ```
 
 ## Performance Targets
