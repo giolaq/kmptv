@@ -35,21 +35,26 @@ struct ContentView: View {
             await loadContent()
         }
         .sheet(item: $selectedItem) { item in
+            // Stack the player on top of the detail rather than swapping
+            // between them: setting `selectedItem = nil` here would dismiss
+            // the sheet first, exposing the home view for a frame before the
+            // player's fullScreenCover takes over (the "flash" bug). Instead
+            // we keep the detail underneath and present the player on top.
+            // When the player dismisses, the user returns to the detail screen
+            // — matching standard streaming-app back-navigation.
             ContentDetailView(
                 item: item,
                 onBack: { selectedItem = nil },
                 onPlay: { tapped in
-                    // Only launch the player if we actually have a playable URL.
                     guard tapped.isPlayable else { return }
                     playingItem = tapped
-                    selectedItem = nil
                 }
             )
-        }
-        .fullScreenCover(item: $playingItem) { item in
-            if let url = item.videoUrl {
-                VideoPlayerView(item: item, videoURL: url) {
-                    playingItem = nil
+            .fullScreenCover(item: $playingItem) { playing in
+                if let url = playing.videoUrl {
+                    VideoPlayerView(item: playing, videoURL: url) {
+                        playingItem = nil
+                    }
                 }
             }
         }

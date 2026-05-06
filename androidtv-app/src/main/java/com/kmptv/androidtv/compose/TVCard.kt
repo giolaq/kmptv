@@ -93,7 +93,7 @@ fun TVCard(
                 overflow = TextOverflow.Ellipsis,
                 modifier = Modifier
                     .align(Alignment.BottomStart)
-                    .padding(10.dp),
+                    .padding(horizontal = 14.dp, vertical = 12.dp),
             )
 
             item.metadata.genre?.let { genre ->
