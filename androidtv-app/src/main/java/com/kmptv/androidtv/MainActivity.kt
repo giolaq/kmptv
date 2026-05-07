@@ -35,13 +35,13 @@ import com.kmptv.androidtv.compose.TVCard
 import com.kmptv.androidtv.compose.VideoPlayerScreen
 import com.kmptv.androidtv.theme.KMPTVTheme
 import com.kmptv.androidtv.theme.KmptvColors
+import com.kmptv.shared_core.di.ServiceLocator
 import com.kmptv.shared_core.models.ContentItem
-import com.kmptv.shared_core.repositories.ContentRepositoryImpl
 import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
 
-    private val contentRepository = ContentRepositoryImpl()
+    private val contentRepository = ServiceLocator.contentRepository()
 
     @OptIn(ExperimentalTvMaterial3Api::class)
     override fun onCreate(savedInstanceState: Bundle?) {

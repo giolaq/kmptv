@@ -1,12 +1,5 @@
 package com.kmptv.shared_core.models
 
-/**
- * Result wrapper for handling success and error states.
- *
- * There was previously a `Loading` variant that was never emitted or pattern
- * matched — it has been removed. Re-introduce one when callers actually need
- * progressive state.
- */
 sealed class Result<T> {
     data class Success<T>(val data: T) : Result<T>()
     data class Error<T>(val exception: Exception, val message: String) : Result<T>()
@@ -35,9 +28,6 @@ sealed class Result<T> {
     }
 }
 
-/**
- * User credentials for authentication.
- */
 data class UserCredentials(
     val username: String? = null,
     val email: String? = null,

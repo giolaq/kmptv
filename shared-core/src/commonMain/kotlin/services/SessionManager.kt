@@ -1,10 +1,9 @@
 package com.kmptv.shared_core.services
 
 import com.kmptv.shared_core.models.*
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 
-/**
- * Interface for managing user sessions and authentication.
- */
 interface SessionManager {
     suspend fun createGuestSession(deviceInfo: DeviceInfo): Result<UserSession>
     suspend fun authenticateUser(credentials: UserCredentials): Result<UserSession>
@@ -14,17 +13,16 @@ interface SessionManager {
     fun getCurrentSession(): UserSession?
 }
 
-/**
- * In-memory implementation of [SessionManager].
- */
-class SessionManagerImpl : SessionManager {
+fun interface AuthProvider {
+    suspend fun authenticate(username: String, password: String): Boolean
+}
 
+class SessionManagerImpl(
+    private val authProvider: AuthProvider,
+) : SessionManager {
+
+    private val mutex = Mutex()
     private var currentSession: UserSession? = null
-    private val validUsers = mapOf(
-        "testuser" to "password123",
-        "admin" to "admin123",
-        "guest" to "guest",
-    )
 
     override suspend fun createGuestSession(deviceInfo: DeviceInfo): Result<UserSession> {
         return try {
@@ -36,7 +34,7 @@ class SessionManagerImpl : SessionManager {
                 lastActivity = nowMillis(),
                 sessionTimeout = SessionConstants.GUEST_TIMEOUT_MS,
             )
-            currentSession = session
+            mutex.withLock { currentSession = session }
             Result.Success(session)
         } catch (e: Exception) {
             Result.Error(e, "Failed to create guest session: ${e.message}")
@@ -59,14 +57,14 @@ class SessionManagerImpl : SessionManager {
                 )
             }
 
-            if (validUsers[username] != password) {
+            if (!authProvider.authenticate(username, password)) {
                 return Result.Error(
                     IllegalArgumentException("Authentication failed"),
                     "Invalid username or password",
                 )
             }
 
-            val deviceInfo = currentSession?.deviceInfo ?: DeviceInfoDefaults.forPlatform()
+            val deviceInfo = mutex.withLock { currentSession?.deviceInfo } ?: DeviceInfoDefaults.forPlatform()
             val authenticatedSession = UserSession(
                 sessionId = IdGenerator.sessionId(),
                 userId = username,
@@ -75,7 +73,7 @@ class SessionManagerImpl : SessionManager {
                 lastActivity = nowMillis(),
                 sessionTimeout = SessionConstants.AUTHENTICATED_TIMEOUT_MS,
             )
-            currentSession = authenticatedSession
+            mutex.withLock { currentSession = authenticatedSession }
             Result.Success(authenticatedSession)
         } catch (e: Exception) {
             Result.Error(e, "Authentication failed: ${e.message}")
@@ -83,13 +81,13 @@ class SessionManagerImpl : SessionManager {
     }
 
     override suspend fun updateLastActivity() {
-        currentSession = currentSession?.updateActivity()
+        mutex.withLock { currentSession = currentSession?.updateActivity() }
     }
 
-    override suspend fun isSessionValid(): Boolean = currentSession?.isValid() ?: false
+    override suspend fun isSessionValid(): Boolean = mutex.withLock { currentSession?.isValid() ?: false }
 
     override suspend fun endSession() {
-        currentSession = null
+        mutex.withLock { currentSession = null }
     }
 
     override fun getCurrentSession(): UserSession? = currentSession

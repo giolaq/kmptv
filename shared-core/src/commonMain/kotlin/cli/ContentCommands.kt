@@ -2,9 +2,14 @@ package com.kmptv.shared_core.cli
 
 import com.kmptv.shared_core.models.ContentItem
 import com.kmptv.shared_core.models.TimeFormat
-import com.kmptv.shared_core.models.nowMillis
 import com.kmptv.shared_core.repositories.ContentRepository
 import kotlinx.coroutines.runBlocking
+import kotlinx.serialization.encodeToString
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.put
+import kotlinx.serialization.json.putJsonArray
+import kotlinx.serialization.json.putJsonObject
 
 /**
  * CLI commands for content management.
@@ -47,20 +52,19 @@ class ContentCommands(private val contentRepository: ContentRepository) {
         return if (result.isSuccess) {
             val items = result.getOrThrow()
             when (format) {
-                "json" -> println(
-                    """
-                    {
-                      "success": true,
-                      "data": {
-                        "items": [
-                          ${items.joinToString(",\n              ") { itemToJson(it) }}
-                        ],
-                        "totalCount": ${items.size}
-                      },
-                      "timestamp": "${nowMillis()}"
+                "json" -> println(json.encodeToString(buildJsonObject {
+                    put("success", true)
+                    putJsonObject("data") {
+                        putJsonArray("items") {
+                            items.forEach { add(buildJsonObject {
+                                put("id", it.id)
+                                put("title", it.title)
+                                put("contentType", it.contentType.name)
+                            }) }
+                        }
+                        put("totalCount", items.size)
                     }
-                    """.trimIndent(),
-                )
+                }))
                 else -> {
                     println("ID           | Title            | Type  | Offline | Last Accessed")
                     println("------------ | ---------------- | ----- | ------- | -------------")
@@ -140,20 +144,20 @@ class ContentCommands(private val contentRepository: ContentRepository) {
         return if (result.isSuccess) {
             val items = result.getOrThrow()
             when (format) {
-                "json" -> println(
-                    """
-                    {
-                      "success": true,
-                      "data": {
-                        "query": "$query",
-                        "items": [
-                          ${items.joinToString(",\n              ") { itemToJson(it) }}
-                        ],
-                        "resultCount": ${items.size}
-                      }
+                "json" -> println(json.encodeToString(buildJsonObject {
+                    put("success", true)
+                    putJsonObject("data") {
+                        put("query", query)
+                        putJsonArray("items") {
+                            items.forEach { add(buildJsonObject {
+                                put("id", it.id)
+                                put("title", it.title)
+                                put("contentType", it.contentType.name)
+                            }) }
+                        }
+                        put("resultCount", items.size)
                     }
-                    """.trimIndent(),
-                )
+                }))
                 else -> {
                     println("Search Results for '$query':")
                     println("ID           | Title            | Type  | Description")
@@ -190,17 +194,19 @@ class ContentCommands(private val contentRepository: ContentRepository) {
         }
     }
 
-    private fun itemToJson(item: ContentItem): String = """
-        {
-          "id": "${item.id}",
-          "title": "${item.title}",
-          "contentType": "${item.contentType}",
-          "description": "${item.description ?: ""}",
-          "isOfflineAvailable": ${item.isOfflineAvailable},
-          "focusable": ${item.focusable},
-          "lastAccessed": ${item.lastAccessed}
+    private val json = Json { prettyPrint = true }
+
+    private fun itemToJson(item: ContentItem): String = json.encodeToString(
+        buildJsonObject {
+            put("id", item.id)
+            put("title", item.title)
+            put("contentType", item.contentType.name)
+            put("description", item.description ?: "")
+            put("isOfflineAvailable", item.isOfflineAvailable)
+            put("focusable", item.focusable)
+            put("lastAccessed", item.lastAccessed)
         }
-    """.trimIndent()
+    )
 
     private fun printHelp() {
         println(

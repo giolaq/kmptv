@@ -146,9 +146,6 @@ private fun DetailActionButton(
     isPrimary: Boolean,
     onClick: () -> Unit,
 ) {
-    // This button needs both (a) scale-on-focus animation and (b) fill-color
-    // reaction to focus. We keep a single local `focused` flag to drive both;
-    // using `tvFocusScale` here would create two sources of truth for focus.
     var focused by remember { mutableStateOf(false) }
     val scale by animateFloatAsState(
         targetValue = if (focused) 1.05f else 1f,

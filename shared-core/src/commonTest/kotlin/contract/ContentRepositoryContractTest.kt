@@ -11,14 +11,6 @@ import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
-/**
- * Contract tests for [ContentRepositoryImpl].
- *
- * These tests inject a [FakeCatalogSource] so they are deterministic and do
- * not depend on network access — the iOS simulator's Kotlin test runner has
- * no reachable network, which previously made these tests silently pass only
- * because a hardcoded sample fallback masked the fetch failure.
- */
 class ContentRepositoryContractTest {
 
     private fun newRepository(

@@ -1,6 +1,7 @@
 package com.kmptv.shared_core.contract
 
 import com.kmptv.shared_core.models.*
+import com.kmptv.shared_core.services.AuthProvider
 import com.kmptv.shared_core.services.SessionManagerImpl
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
@@ -12,12 +13,18 @@ import kotlin.test.assertTrue
 
 class SessionManagerContractTest {
 
+    private val testAuthProvider = AuthProvider { username, password ->
+        username == "testuser" && password == "password123"
+    }
+
+    private fun newManager() = SessionManagerImpl(testAuthProvider)
+
     private fun deviceInfo(): DeviceInfo =
         DeviceInfoDefaults.forPlatform(deviceId = "test-device")
 
     @Test
     fun createGuestSession_returns_valid_session() = runTest {
-        val manager = SessionManagerImpl()
+        val manager = newManager()
         val result = manager.createGuestSession(deviceInfo())
         assertTrue(result.isSuccess)
         val session = result.getOrThrow()
@@ -28,7 +35,7 @@ class SessionManagerContractTest {
 
     @Test
     fun authenticateUser_succeeds_with_valid_credentials() = runTest {
-        val manager = SessionManagerImpl()
+        val manager = newManager()
         val result = manager.authenticateUser(
             UserCredentials(username = "testuser", password = "password123"),
         )
@@ -40,7 +47,7 @@ class SessionManagerContractTest {
 
     @Test
     fun authenticateUser_fails_with_invalid_credentials() = runTest {
-        val manager = SessionManagerImpl()
+        val manager = newManager()
         val result = manager.authenticateUser(
             UserCredentials(username = "not-a-user", password = "wrong"),
         )
@@ -49,14 +56,14 @@ class SessionManagerContractTest {
 
     @Test
     fun authenticateUser_fails_with_empty_credentials() = runTest {
-        val manager = SessionManagerImpl()
+        val manager = newManager()
         val result = manager.authenticateUser(UserCredentials())
         assertFalse(result.isSuccess)
     }
 
     @Test
     fun updateLastActivity_advances_timestamp() = runTest {
-        val manager = SessionManagerImpl()
+        val manager = newManager()
         manager.createGuestSession(deviceInfo())
         val before = manager.getCurrentSession()?.lastActivity ?: 0
         manager.updateLastActivity()
@@ -66,14 +73,14 @@ class SessionManagerContractTest {
 
     @Test
     fun isSessionValid_is_true_for_fresh_session() = runTest {
-        val manager = SessionManagerImpl()
+        val manager = newManager()
         manager.createGuestSession(deviceInfo())
         assertTrue(manager.isSessionValid())
     }
 
     @Test
     fun endSession_clears_current_session() = runTest {
-        val manager = SessionManagerImpl()
+        val manager = newManager()
         manager.createGuestSession(deviceInfo())
         manager.endSession()
         assertNull(manager.getCurrentSession())
@@ -82,8 +89,8 @@ class SessionManagerContractTest {
 
     @Test
     fun getCurrentSession_starts_null() = runTest {
-        val manager = SessionManagerImpl()
-        assertNotNull(manager) // sanity
+        val manager = newManager()
+        assertNotNull(manager)
         assertNull(manager.getCurrentSession())
     }
 }

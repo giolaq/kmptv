@@ -6,11 +6,12 @@ KMPTV is a Kotlin Multiplatform television application optimized for 10-foot vie
 ## Architecture
 
 ### Technology Stack
-- **Language**: Kotlin 2.2.10 (Stable) with Kotlin Multiplatform
+- **Language**: Kotlin 1.9.24 with Kotlin Multiplatform
 - **Android TV**: Compose for TV + KMP shared modules
-- **Apple TV**: Native tvOS (Swift/UIKit) + KMP shared modules  
-- **Storage**: SQLDelight for structured data/offline caching, Multiplatform Settings for preferences
-- **Testing**: kotlin.test + JUnit 5 for common code, platform-specific UI testing
+- **Apple TV**: Native tvOS (SwiftUI) — planned XCFramework integration with shared-core
+- **Networking**: Ktor with platform engines (OkHttp on Android, Darwin on iOS/tvOS)
+- **DI**: ServiceLocator pattern in shared-core
+- **Testing**: kotlin.test + kotlinx-coroutines-test for common code, platform-specific UI testing
 
 ### Project Structure
 ```

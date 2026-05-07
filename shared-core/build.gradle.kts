@@ -8,6 +8,8 @@ group = "com.kmptv"
 version = "0.1.0"
 
 kotlin {
+    applyDefaultHierarchyTemplate()
+
     androidTarget {
         compilations.all {
             kotlinOptions {
@@ -16,7 +18,6 @@ kotlin {
         }
     }
 
-    // iOS/tvOS targets for Apple TV app
     listOf(
         iosX64(),
         iosArm64(),
@@ -50,12 +51,12 @@ kotlin {
                 implementation("io.ktor:ktor-client-okhttp:2.3.12")
             }
         }
-        val iosMain by creating {
+        val iosMain by getting {
             dependencies {
                 implementation("io.ktor:ktor-client-darwin:2.3.12")
             }
         }
-        val iosTest by creating
+        val iosTest by getting
     }
 }
 

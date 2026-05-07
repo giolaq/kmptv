@@ -1,24 +1,19 @@
 package com.kmptv.shared_core.services
 
 import com.kmptv.shared_core.models.*
+import com.kmptv.shared_core.platformEngine
 import io.ktor.client.*
 import io.ktor.client.call.*
+import io.ktor.client.plugins.*
 import io.ktor.client.plugins.contentnegotiation.*
 import io.ktor.client.request.*
+import io.ktor.client.statement.*
 import io.ktor.serialization.kotlinx.json.*
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 
 private const val CATALOG_URL = "https://giolaq.github.io/scrap-tv-feed/catalog.json"
 
-/**
- * Abstraction over "somewhere to fetch the catalogue from".
- *
- * Lets [com.kmptv.shared_core.repositories.ContentRepositoryImpl] take a fake
- * in tests so the repository contract can be exercised without depending on
- * host-machine network access (the iOS simulator in particular cannot reach
- * the live feed from the Kotlin test runner).
- */
 fun interface CatalogSource {
     suspend fun fetchCatalog(): Result<List<ContentItem>>
 }
@@ -54,20 +49,29 @@ internal data class CatalogResponse(
     val items: List<CatalogItem> = emptyList(),
 )
 
-/**
- * Live [CatalogSource] backed by the hosted JSON catalogue feed.
- */
 class CatalogService : CatalogSource {
 
-    private val client = HttpClient {
+    private val client = HttpClient(platformEngine()) {
         install(ContentNegotiation) {
             json(Json { ignoreUnknownKeys = true })
+        }
+        install(HttpTimeout) {
+            connectTimeoutMillis = 10_000
+            requestTimeoutMillis = 30_000
+            socketTimeoutMillis = 15_000
         }
     }
 
     override suspend fun fetchCatalog(): Result<List<ContentItem>> {
         return try {
-            val response: CatalogResponse = client.get(CATALOG_URL).body()
+            val httpResponse = client.get(CATALOG_URL)
+            if (httpResponse.status.value !in 200..299) {
+                return Result.Error(
+                    RuntimeException("HTTP ${httpResponse.status.value}"),
+                    "Catalog request failed with status ${httpResponse.status.value}",
+                )
+            }
+            val response: CatalogResponse = httpResponse.body()
             val items = response.items.mapIndexed { index, item ->
                 item.toContentItem(priority = response.items.size - index)
             }
@@ -75,6 +79,10 @@ class CatalogService : CatalogSource {
         } catch (e: Exception) {
             Result.Error(e, "Failed to fetch catalog: ${e.message}")
         }
+    }
+
+    fun close() {
+        client.close()
     }
 }
 
