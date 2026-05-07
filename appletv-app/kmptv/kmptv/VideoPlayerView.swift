@@ -8,6 +8,7 @@
 import SwiftUI
 import AVKit
 import AVFoundation
+import MediaPlayer
 
 struct VideoPlayerView: View {
     let item: ContentItem
@@ -71,7 +72,6 @@ struct VideoPlayerView: View {
         self.player = newPlayer
         newPlayer.play()
 
-        // Poll playback state + position every 0.5s.
         let interval = CMTime(seconds: 0.5, preferredTimescale: CMTimeScale(NSEC_PER_SEC))
         newPlayer.addPeriodicTimeObserver(forInterval: interval, queue: .main) { time in
             isPlaying = newPlayer.timeControlStatus == .playing
@@ -79,9 +79,11 @@ struct VideoPlayerView: View {
             if let d = newPlayer.currentItem?.duration, CMTIME_IS_NUMERIC(d) {
                 durationSeconds = CMTimeGetSeconds(d)
             }
+            updateNowPlayingInfo()
         }
 
-        // Auto-hide controls after 5s.
+        setupRemoteCommands()
+
         DispatchQueue.main.asyncAfter(deadline: .now() + 5.0) {
             withAnimation(.easeOut(duration: 0.3)) {
                 showingControls = false
@@ -92,6 +94,51 @@ struct VideoPlayerView: View {
     private func cleanupPlayer() {
         player?.pause()
         player = nil
+        MPNowPlayingInfoCenter.default().nowPlayingInfo = nil
+        let commandCenter = MPRemoteCommandCenter.shared()
+        commandCenter.playCommand.removeTarget(nil)
+        commandCenter.pauseCommand.removeTarget(nil)
+        commandCenter.skipForwardCommand.removeTarget(nil)
+        commandCenter.skipBackwardCommand.removeTarget(nil)
+    }
+
+    private func setupRemoteCommands() {
+        let commandCenter = MPRemoteCommandCenter.shared()
+        commandCenter.playCommand.addTarget { _ in
+            self.player?.play()
+            return .success
+        }
+        commandCenter.pauseCommand.addTarget { _ in
+            self.player?.pause()
+            return .success
+        }
+        commandCenter.skipForwardCommand.preferredIntervals = [10]
+        commandCenter.skipForwardCommand.addTarget { _ in
+            guard let player = self.player else { return .commandFailed }
+            let newTime = CMTimeAdd(player.currentTime(), CMTime(seconds: 10, preferredTimescale: 1))
+            player.seek(to: newTime)
+            return .success
+        }
+        commandCenter.skipBackwardCommand.preferredIntervals = [10]
+        commandCenter.skipBackwardCommand.addTarget { _ in
+            guard let player = self.player else { return .commandFailed }
+            let newTime = CMTimeSubtract(player.currentTime(), CMTime(seconds: 10, preferredTimescale: 1))
+            player.seek(to: max(newTime, .zero))
+            return .success
+        }
+    }
+
+    private func updateNowPlayingInfo() {
+        var info: [String: Any] = [
+            MPMediaItemPropertyTitle: item.title,
+            MPNowPlayingInfoPropertyElapsedPlaybackTime: currentSeconds,
+            MPMediaItemPropertyPlaybackDuration: durationSeconds,
+            MPNowPlayingInfoPropertyPlaybackRate: isPlaying ? 1.0 : 0.0,
+        ]
+        if let genre = item.genre {
+            info[MPMediaItemPropertyArtist] = genre
+        }
+        MPNowPlayingInfoCenter.default().nowPlayingInfo = info
     }
 }
 

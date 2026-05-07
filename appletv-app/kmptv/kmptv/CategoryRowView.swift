@@ -30,10 +30,9 @@ struct CategoryRowView: View {
                     }
                 }
                 .padding(.horizontal, 60)
-                // Extra vertical padding so that the focused scale-up isn't
-                // clipped by the next row's edge.
                 .padding(.vertical, 24)
             }
+            .focusSection()
         }
     }
 }

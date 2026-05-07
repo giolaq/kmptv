@@ -45,7 +45,7 @@ fun ContentDetailScreen(
     ) {
         AsyncImage(
             model = item.thumbnailUrl,
-            contentDescription = null,
+            contentDescription = "Backdrop for ${item.title}",
             contentScale = ContentScale.Crop,
             modifier = Modifier.fillMaxSize(),
         )

@@ -29,6 +29,7 @@ struct ContentDetailView: View {
                     Color.black
                 }
             }
+            .accessibilityHidden(true)
             .ignoresSafeArea()
 
             // Horizontal scrim for text legibility.
@@ -49,7 +50,6 @@ struct ContentDetailView: View {
             .ignoresSafeArea()
 
             VStack(alignment: .leading, spacing: 16) {
-                // Back
                 Button(action: onBack) {
                     Label("Back", systemImage: "chevron.left")
                         .font(.system(size: 18, weight: .medium))
@@ -128,6 +128,7 @@ struct ContentDetailView: View {
             .padding(.horizontal, 60)
             .padding(.vertical, 60)
         }
+        .onExitCommand(perform: onBack)
     }
 }
 

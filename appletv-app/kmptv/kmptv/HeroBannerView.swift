@@ -28,7 +28,8 @@ struct HeroBannerView: View {
                         Color.black
                     }
                 }
-                .id(item.id) // force fresh image on focus change
+                .accessibilityLabel("Banner image for \(item.title)")
+                .id(item.id)
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
                 .clipped()
                 .transition(.opacity)

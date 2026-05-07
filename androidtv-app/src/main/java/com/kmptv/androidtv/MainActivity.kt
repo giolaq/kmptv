@@ -14,6 +14,7 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
@@ -65,8 +66,8 @@ class MainActivity : ComponentActivity() {
         var isLoading by remember { mutableStateOf(true) }
         var errorMessage by remember { mutableStateOf<String?>(null) }
         var selectedItem by remember { mutableStateOf<ContentItem?>(null) }
-        var showingDetail by remember { mutableStateOf(false) }
-        var showingVideoPlayer by remember { mutableStateOf(false) }
+        var showingDetail by rememberSaveable { mutableStateOf(false) }
+        var showingVideoPlayer by rememberSaveable { mutableStateOf(false) }
         var focusedItem by remember { mutableStateOf<ContentItem?>(null) }
 
         val scope = rememberCoroutineScope()
@@ -222,21 +223,28 @@ private fun HomeScreen(
 
 @Composable
 private fun HeroBanner(item: ContentItem?) {
+    var debouncedItem by remember { mutableStateOf(item) }
+
+    LaunchedEffect(item) {
+        kotlinx.coroutines.delay(250)
+        debouncedItem = item
+    }
+
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .height(300.dp)
+            .fillMaxHeight(0.35f)
             .background(KmptvColors.Background),
     ) {
         Crossfade(
-            targetState = item?.thumbnailUrl,
+            targetState = debouncedItem?.thumbnailUrl,
             animationSpec = tween(600),
             label = "heroCrossfade",
         ) { url ->
             if (url != null) {
                 AsyncImage(
                     model = url,
-                    contentDescription = null,
+                    contentDescription = debouncedItem?.title?.let { "Banner image for $it" },
                     contentScale = ContentScale.Crop,
                     modifier = Modifier.fillMaxSize(),
                 )
@@ -262,7 +270,7 @@ private fun HeroBanner(item: ContentItem?) {
             ),
         )
 
-        item?.let {
+        debouncedItem?.let {
             Column(
                 modifier = Modifier
                     .align(Alignment.BottomStart)

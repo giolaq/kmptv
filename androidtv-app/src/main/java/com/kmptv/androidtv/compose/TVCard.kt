@@ -69,7 +69,7 @@ fun TVCard(
                 model = item.thumbnailUrl,
                 contentDescription = item.title,
                 contentScale = ContentScale.Crop,
-                modifier = Modifier.fillMaxSize().clip(shape),
+                modifier = Modifier.fillMaxSize().clip(shape).background(Color.White.copy(alpha = 0.05f)),
             )
 
             Box(

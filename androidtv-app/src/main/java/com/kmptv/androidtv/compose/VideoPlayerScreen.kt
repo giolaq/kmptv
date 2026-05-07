@@ -17,21 +17,27 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.foundation.focusable
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.key.Key
+import androidx.compose.ui.input.key.KeyEventType
+import androidx.compose.ui.input.key.key
+import androidx.compose.ui.input.key.onKeyEvent
+import androidx.compose.ui.input.key.type
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.media3.common.MediaItem
+import androidx.media3.common.MediaMetadata
 import androidx.media3.common.Player
-import androidx.media3.datasource.DefaultDataSource
 import androidx.media3.exoplayer.ExoPlayer
-import androidx.media3.exoplayer.source.ProgressiveMediaSource
+import androidx.media3.session.MediaSession
 import androidx.media3.ui.PlayerView
 import androidx.tv.material3.*
 import com.kmptv.androidtv.theme.KmptvColors
@@ -40,7 +46,6 @@ import kotlinx.coroutines.delay
 
 private const val THUMB_SIZE_DP = 14
 
-@androidx.media3.common.util.UnstableApi
 @Composable
 fun VideoPlayerScreen(
     item: ContentItem,
@@ -57,31 +62,37 @@ fun VideoPlayerScreen(
 
     val exoPlayer = remember {
         ExoPlayer.Builder(context).build().apply {
-            val source = ProgressiveMediaSource.Factory(DefaultDataSource.Factory(context))
-                .createMediaSource(MediaItem.fromUri(Uri.parse(videoUrl)))
-            setMediaSource(source)
+            val mediaItem = MediaItem.Builder()
+                .setUri(Uri.parse(videoUrl))
+                .setMediaMetadata(
+                    MediaMetadata.Builder()
+                        .setTitle(item.title)
+                        .setArtist(item.metadata.genre ?: "")
+                        .build()
+                )
+                .build()
+            setMediaItem(mediaItem)
             prepare()
             playWhenReady = true
             addListener(object : Player.Listener {
                 override fun onPlaybackStateChanged(state: Int) {
-                    if (state == Player.STATE_READY) duration = this@apply.duration
+                    if (state == Player.STATE_READY) duration = this@apply.duration.coerceAtLeast(0L)
                     isPlaying = state == Player.STATE_READY && playWhenReady
                 }
 
                 override fun onIsPlayingChanged(playing: Boolean) {
                     isPlaying = playing
                 }
+
+                override fun onEvents(player: Player, events: Player.Events) {
+                    currentPosition = player.currentPosition
+                    if (duration <= 0L) duration = player.duration.coerceAtLeast(0L)
+                }
             })
         }
     }
 
-    LaunchedEffect(Unit) {
-        while (true) {
-            currentPosition = exoPlayer.currentPosition
-            if (duration <= 0L) duration = exoPlayer.duration.coerceAtLeast(0L)
-            delay(500)
-        }
-    }
+    val mediaSession = remember { MediaSession.Builder(context, exoPlayer).build() }
 
     LaunchedEffect(controlsInteraction) {
         showControls = true
@@ -89,7 +100,12 @@ fun VideoPlayerScreen(
         if (isPlaying) showControls = false
     }
 
-    DisposableEffect(Unit) { onDispose { exoPlayer.release() } }
+    DisposableEffect(Unit) {
+        onDispose {
+            mediaSession.release()
+            exoPlayer.release()
+        }
+    }
 
     Box(modifier = modifier.fillMaxSize().background(Color.Black)) {
         AndroidView(
@@ -147,7 +163,11 @@ fun VideoPlayerScreen(
                         .padding(horizontal = 40.dp, vertical = 24.dp),
                     verticalArrangement = Arrangement.spacedBy(12.dp),
                 ) {
-                    SeekBar(currentPosition = currentPosition, duration = duration)
+                    SeekBar(
+                        currentPosition = currentPosition,
+                        duration = duration,
+                        onSeek = { pos -> exoPlayer.seekTo(pos) },
+                    )
 
                     Row(
                         Modifier.fillMaxWidth(),
@@ -192,39 +212,54 @@ fun VideoPlayerScreen(
     }
 }
 
-/**
- * Seek bar with a thumb that actually tracks playback position.
- *
- * The previous implementation used `.offset(x = ((progress * 100).dp * 0.01f * 10))`
- * which simplifies to `progress.dp` — at most 1 dp of travel across a full-width
- * bar, making the thumb effectively invisible. We now use `BoxWithConstraints`
- * to get the measured width and offset the thumb in real pixels.
- */
 @Composable
-private fun SeekBar(currentPosition: Long, duration: Long) {
+private fun SeekBar(
+    currentPosition: Long,
+    duration: Long,
+    onSeek: ((Long) -> Unit)? = null,
+) {
     val progress = if (duration > 0) {
         (currentPosition.toFloat() / duration).coerceIn(0f, 1f)
     } else {
         0f
     }
+    var isFocused by remember { mutableStateOf(false) }
+    val trackHeight = if (isFocused) 8.dp else 6.dp
 
     BoxWithConstraints(
         modifier = Modifier
             .fillMaxWidth()
-            .height(THUMB_SIZE_DP.dp),
+            .height(THUMB_SIZE_DP.dp)
+            .onFocusChanged { isFocused = it.isFocused }
+            .focusable()
+            .onKeyEvent { event ->
+                if (onSeek == null || duration <= 0L) return@onKeyEvent false
+                if (event.type != KeyEventType.KeyDown) return@onKeyEvent false
+                val step = duration / 100
+                when (event.key) {
+                    Key.DirectionRight -> {
+                        onSeek((currentPosition + step).coerceAtMost(duration))
+                        true
+                    }
+                    Key.DirectionLeft -> {
+                        onSeek((currentPosition - step).coerceAtLeast(0L))
+                        true
+                    }
+                    else -> false
+                }
+            },
         contentAlignment = Alignment.CenterStart,
     ) {
         val barWidth = maxWidth
         val thumbSize = THUMB_SIZE_DP.dp
 
-        // Track
         Box(
             Modifier
                 .fillMaxWidth()
-                .height(6.dp)
+                .height(trackHeight)
                 .align(Alignment.CenterStart)
                 .clip(RoundedCornerShape(3.dp))
-                .background(Color.White.copy(alpha = 0.2f)),
+                .background(Color.White.copy(alpha = if (isFocused) 0.35f else 0.2f)),
         ) {
             Box(
                 Modifier
@@ -235,14 +270,13 @@ private fun SeekBar(currentPosition: Long, duration: Long) {
             )
         }
 
-        // Thumb — centered on the progress point, clipped within the bar.
         val thumbX = (barWidth - thumbSize) * progress
         Box(
             Modifier
                 .offset(x = thumbX)
                 .size(thumbSize)
                 .clip(CircleShape)
-                .background(Color.White),
+                .background(if (isFocused) KmptvColors.Accent else Color.White),
         )
     }
 }
