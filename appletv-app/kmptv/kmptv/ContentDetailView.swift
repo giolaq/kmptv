@@ -135,10 +135,10 @@ private struct MetadataChip: View {
     let text: String
     var body: some View {
         Text(text)
-            .font(.system(size: 15, weight: .medium))
+            .font(.system(size: 24, weight: .medium))
             .foregroundStyle(.white.opacity(0.9))
-            .padding(.horizontal, 12)
-            .padding(.vertical, 6)
+            .padding(.horizontal, 14)
+            .padding(.vertical, 7)
             .overlay(
                 RoundedRectangle(cornerRadius: 4, style: .continuous)
                     .stroke(Color.white.opacity(0.3), lineWidth: 1)
@@ -152,11 +152,11 @@ private struct TagsRow: View {
         HStack(spacing: 10) {
             ForEach(Array(tags.enumerated()), id: \.offset) { idx, tag in
                 Text(tag.capitalized)
-                    .font(.system(size: 15))
+                    .font(.system(size: 24))
                     .foregroundStyle(.white.opacity(0.55))
                 if idx != tags.count - 1 {
                     Text("·")
-                        .font(.system(size: 15))
+                        .font(.system(size: 24))
                         .foregroundStyle(.white.opacity(0.35))
                 }
             }

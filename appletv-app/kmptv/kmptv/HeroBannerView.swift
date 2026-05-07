@@ -83,10 +83,10 @@ private struct HeroChip: View {
     let text: String
     var body: some View {
         Text(text)
-            .font(.system(size: 14, weight: .medium))
+            .font(.system(size: 24, weight: .medium))
             .foregroundStyle(.white.opacity(0.9))
-            .padding(.horizontal, 10)
-            .padding(.vertical, 4)
+            .padding(.horizontal, 12)
+            .padding(.vertical, 5)
             .background(Color.white.opacity(0.15))
             .clipShape(RoundedRectangle(cornerRadius: 4, style: .continuous))
     }

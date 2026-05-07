@@ -146,23 +146,25 @@ private struct VideoPlayerControlsOverlay: View {
                     : 0
                 HStack {
                     Text(formatTime(currentSeconds))
-                        .font(.caption)
+                        .font(.system(size: 24, weight: .medium))
                         .foregroundColor(.white.opacity(0.8))
 
                     GeometryReader { geo in
                         ZStack(alignment: .leading) {
                             Rectangle()
                                 .fill(Color.white.opacity(0.3))
-                                .frame(height: 4)
+                                .frame(height: 6)
+                                .clipShape(RoundedRectangle(cornerRadius: 3))
                             Rectangle()
                                 .fill(Color.blue)
-                                .frame(width: geo.size.width * CGFloat(progress), height: 4)
+                                .frame(width: geo.size.width * CGFloat(progress), height: 6)
+                                .clipShape(RoundedRectangle(cornerRadius: 3))
                         }
                     }
-                    .frame(height: 4)
+                    .frame(height: 6)
 
                     Text(formatTime(durationSeconds))
-                        .font(.caption)
+                        .font(.system(size: 24, weight: .medium))
                         .foregroundColor(.white.opacity(0.8))
                 }
                 .padding(.horizontal, 60)

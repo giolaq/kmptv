@@ -106,7 +106,7 @@ fun TVCard(
                 ) {
                     Text(
                         text = genre,
-                        fontSize = 11.sp,
+                        style = MaterialTheme.typography.labelSmall,
                         color = Color.White.copy(alpha = 0.9f),
                         fontWeight = FontWeight.Medium,
                     )

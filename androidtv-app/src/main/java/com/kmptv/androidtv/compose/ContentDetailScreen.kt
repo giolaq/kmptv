@@ -108,11 +108,11 @@ fun ContentDetailScreen(
                         shownTags.forEachIndexed { index, tag ->
                             Text(
                                 text = tag.replaceFirstChar { it.uppercase() },
-                                fontSize = 13.sp,
+                                style = MaterialTheme.typography.bodySmall,
                                 color = Color.White.copy(alpha = 0.5f),
                             )
                             if (index != shownTags.lastIndex) {
-                                Text("·", fontSize = 13.sp, color = Color.White.copy(alpha = 0.3f))
+                                Text("·", style = MaterialTheme.typography.bodySmall, color = Color.White.copy(alpha = 0.3f))
                             }
                         }
                     }
@@ -194,7 +194,7 @@ private fun MetadataChip(text: String) {
     ) {
         Text(
             text = text,
-            fontSize = 13.sp,
+            style = MaterialTheme.typography.labelMedium,
             color = Color.White.copy(alpha = 0.85f),
             fontWeight = FontWeight.Medium,
         )

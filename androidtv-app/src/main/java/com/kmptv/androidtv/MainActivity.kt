@@ -2,6 +2,7 @@ package com.kmptv.androidtv
 
 import android.os.Bundle
 import androidx.activity.ComponentActivity
+import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
 import androidx.compose.animation.Crossfade
 import androidx.compose.animation.core.animateFloatAsState
@@ -15,6 +16,8 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
@@ -23,7 +26,6 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.tv.foundation.lazy.list.TvLazyColumn
 import androidx.tv.foundation.lazy.list.TvLazyRow
 import androidx.tv.foundation.lazy.list.items
@@ -87,6 +89,15 @@ class MainActivity : ComponentActivity() {
             }
         }
 
+        BackHandler(enabled = showingVideoPlayer || showingDetail) {
+            if (showingVideoPlayer) {
+                showingVideoPlayer = false
+            } else if (showingDetail) {
+                showingDetail = false
+                selectedItem = null
+            }
+        }
+
         when {
             showingVideoPlayer && selectedItem?.videoUrl != null -> {
                 VideoPlayerScreen(
@@ -94,8 +105,6 @@ class MainActivity : ComponentActivity() {
                     videoUrl = selectedItem!!.videoUrl!!,
                     onBack = {
                         showingVideoPlayer = false
-                        showingDetail = false
-                        selectedItem = null
                     },
                 )
             }
@@ -108,9 +117,6 @@ class MainActivity : ComponentActivity() {
                         selectedItem = null
                     },
                     onPlay = {
-                        // Only enter the player when the item actually has a playable URL.
-                        // Items without one (audio-only, images, mixed) just stay on the
-                        // detail screen — we don't silently swap in a fake video.
                         if (selectedItem?.videoUrl != null) showingVideoPlayer = true
                     },
                     onAddToWatchlist = {},
@@ -171,6 +177,7 @@ private fun HomeScreen(
     onItemClick: (ContentItem) -> Unit,
 ) {
     var focusedRowIndex by remember { mutableIntStateOf(-1) }
+    val focusRequester = remember { FocusRequester() }
     val categoryList = remember(items) {
         items.groupBy { it.metadata.genre ?: "Other" }
             .filter { it.value.isNotEmpty() }
@@ -178,12 +185,18 @@ private fun HomeScreen(
             .toList()
     }
 
+    LaunchedEffect(categoryList) {
+        if (categoryList.isNotEmpty()) {
+            focusRequester.requestFocus()
+        }
+    }
+
     Column(Modifier.fillMaxSize()) {
         HeroBanner(focusedItem)
 
         TvLazyColumn(
             modifier = Modifier.fillMaxWidth().weight(1f),
-            contentPadding = PaddingValues(bottom = 32.dp),
+            contentPadding = PaddingValues(top = 24.dp, bottom = 48.dp),
         ) {
             categoryList.forEachIndexed { index, (genre, genreItems) ->
                 item {
@@ -196,6 +209,7 @@ private fun HomeScreen(
                         title = genre,
                         items = genreItems,
                         alpha = alpha,
+                        firstItemFocusRequester = if (index == 0) focusRequester else null,
                         onRowFocused = { focusedRowIndex = index },
                         onFocusChanged = onFocusChanged,
                         onItemClick = onItemClick,
@@ -291,7 +305,7 @@ private fun InfoChip(text: String) {
             .background(Color.White.copy(alpha = 0.15f), RoundedCornerShape(4.dp))
             .padding(horizontal = 8.dp, vertical = 4.dp),
     ) {
-        Text(text = text, fontSize = 13.sp, color = Color.White.copy(alpha = 0.9f))
+        Text(text = text, style = MaterialTheme.typography.labelMedium, color = Color.White.copy(alpha = 0.9f))
     }
 }
 
@@ -300,13 +314,14 @@ private fun ContentRow(
     title: String,
     items: List<ContentItem>,
     alpha: Float = 1f,
+    firstItemFocusRequester: FocusRequester? = null,
     onRowFocused: () -> Unit = {},
     onFocusChanged: (ContentItem) -> Unit,
     onItemClick: (ContentItem) -> Unit,
 ) {
     Column(
         modifier = Modifier
-            .padding(top = 12.dp)
+            .padding(top = 16.dp)
             .graphicsLayer { this.alpha = alpha }
             .onFocusChanged { if (it.hasFocus) onRowFocused() },
     ) {
@@ -322,10 +337,16 @@ private fun ContentRow(
             horizontalArrangement = Arrangement.spacedBy(16.dp),
         ) {
             items(items, key = { it.id }) { item ->
+                val isFirst = item.id == items.firstOrNull()?.id
                 TVCard(
                     item = item,
                     onItemClick = onItemClick,
                     onItemFocused = onFocusChanged,
+                    modifier = if (isFirst && firstItemFocusRequester != null) {
+                        Modifier.focusRequester(firstItemFocusRequester)
+                    } else {
+                        Modifier
+                    },
                 )
             }
         }

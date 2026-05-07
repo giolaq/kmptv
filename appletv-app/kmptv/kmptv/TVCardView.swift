@@ -48,10 +48,10 @@ struct TVCardView: View {
                         HStack {
                             Spacer()
                             Text(genre)
-                                .font(.system(size: 12, weight: .medium))
+                                .font(.system(size: 23, weight: .medium))
                                 .foregroundStyle(.white.opacity(0.9))
-                                .padding(.horizontal, 8)
-                                .padding(.vertical, 3)
+                                .padding(.horizontal, 10)
+                                .padding(.vertical, 4)
                                 .background(Color.black.opacity(0.6))
                                 .clipShape(RoundedRectangle(cornerRadius: 4, style: .continuous))
                         }
@@ -65,7 +65,7 @@ struct TVCardView: View {
                     Spacer()
                     HStack {
                         Text(item.title)
-                            .font(.system(size: 15, weight: .semibold))
+                            .font(.system(size: 26, weight: .semibold))
                             .foregroundStyle(.white)
                             .lineLimit(1)
                         Spacer(minLength: 0)

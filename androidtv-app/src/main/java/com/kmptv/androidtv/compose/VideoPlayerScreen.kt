@@ -156,7 +156,7 @@ fun VideoPlayerScreen(
                     ) {
                         Text(
                             "${formatTime(currentPosition)} / ${formatTime(duration)}",
-                            fontSize = 14.sp,
+                            style = MaterialTheme.typography.bodySmall,
                             color = Color.White.copy(alpha = 0.7f),
                         )
 
@@ -183,7 +183,7 @@ fun VideoPlayerScreen(
                         }
 
                         item.metadata.genre?.let {
-                            Text(it, fontSize = 13.sp, color = Color.White.copy(alpha = 0.4f))
+                            Text(it, style = MaterialTheme.typography.bodySmall, color = Color.White.copy(alpha = 0.4f))
                         } ?: Spacer(Modifier.width(1.dp))
                     }
                 }
@@ -293,7 +293,7 @@ private fun PlayerButton(
         ) {
             Text(
                 label,
-                fontSize = if (isPrimary) 22.sp else 14.sp,
+                fontSize = if (isPrimary) 22.sp else 18.sp,
                 fontWeight = FontWeight.SemiBold,
                 color = fg,
             )
